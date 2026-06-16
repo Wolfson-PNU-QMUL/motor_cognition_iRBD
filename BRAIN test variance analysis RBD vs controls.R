@@ -88,7 +88,7 @@ all(matched_RBD_control_BT_data2$braintest_worst_ks_8 ==
       matched_RBD_control_BT_data2$braintest_worst_ks_adj_8, 
     na.rm = TRUE)
 
-# List of your BRAIN test columns
+# List of BRAIN test columns
 cols_bt <- c(
   "braintest_worst_at_adj_4", "braintest_worst_at_adj_5", "braintest_worst_at_adj_7", "braintest_worst_at_adj_8",
   "braintest_worst_is_adj_4", "braintest_worst_is_adj_5", "braintest_worst_is_adj_7", "braintest_worst_is_adj_8",
@@ -125,7 +125,7 @@ RBD_BT_long <- matched_RBD_control_BT_data2 %>%
     values_to = "Value"
   ) %>%
   mutate(Session = as.numeric(Session)) %>%
-  group_by(PID2, Measure) %>%             # define per-participant & per-measure
+  group_by(PID2, Measure) %>%            
   arrange(PID2, Measure, Session) %>%
   mutate(RelativeVisit = row_number()) %>% # baseline = 1, next = 2, etc.
   ungroup()
@@ -139,7 +139,7 @@ RBD_BT_long %>%
 RBD_BT_long %>%
   filter(!is.na(Value)) %>%         
   group_by(Measure, PID2) %>%
-  summarise(n_obs = n(), .groups = "drop") %>%    # number of observed timepoints
+  summarise(n_obs = n(), .groups = "drop") %>%    
   filter(n_obs == 4) %>%                          
   count(Measure, name = "n_IDs_complete_4tp")
 
@@ -157,7 +157,7 @@ RBD_BT_long_all <- RBD_BT_long %>%
   group_by(PID2, Code, Measure) %>%
   filter(n() >= 2) %>%                 
   arrange(Session, .by_group = TRUE) %>%
-  mutate(RelativeVisit = row_number()) %>%   # recompute visit order
+  mutate(RelativeVisit = row_number()) %>% 
   ungroup()
 
 RBD_BT_long_all %>%
@@ -266,7 +266,7 @@ ggplot(outlier_data, aes(x = factor(RelativeVisit), y = Value, fill = Code)) +
   )
 
 
-#create caps for BRAIN test parameters:
+#create caps for BRAIN test parameters
 apply_bt_qc_and_transform <- function(RBD_BT_long_all,
                                       measure_col = "Measure",
                                       value_col   = "Value",
@@ -274,7 +274,6 @@ apply_bt_qc_and_transform <- function(RBD_BT_long_all,
                                       log_at      = TRUE) {
   RBD_BT_long_all %>%
     mutate(
-      # ensure numeric (safe-ish; if you have messy strings use parse_number here)
       Value_num = suppressWarnings(as.numeric(.data[[value_col]])),
       
       qc_flag = case_when(
@@ -282,18 +281,18 @@ apply_bt_qc_and_transform <- function(RBD_BT_long_all,
         .data[[measure_col]] == "braintest_worst_ks" &
           (Value_num < 15 | Value_num > 110) ~ "invalid_KS",
         
-        # AT must be positive if you ever log-transform
+
         .data[[measure_col]] == "braintest_worst_at_adj" &
           (is.na(Value_num) | Value_num <= 0) ~ "invalid_AT_nonpositive",
         
-        # If you believe there is a true ceiling (timeout), cap it (flag it either way)
+
         .data[[measure_col]] == "braintest_worst_at_adj" &
           (Value_num > at_ceiling) ~ "AT_capped_ceiling",
         
         TRUE ~ "ok"
       ),
       
-      # Cleaned value on the ORIGINAL scale
+
       Value_clean = case_when(
         qc_flag == "invalid_KS" ~ NA_real_,
         qc_flag == "invalid_AT_nonpositive" ~ NA_real_,
@@ -301,7 +300,7 @@ apply_bt_qc_and_transform <- function(RBD_BT_long_all,
         TRUE ~ Value_num
       ),
       
-      # Log transform (AT only, after QC)
+
       Value_clean_log = case_when(
         log_at & .data[[measure_col]] == "braintest_worst_at_adj" &
           !is.na(Value_clean) ~ log(Value_clean),
@@ -368,10 +367,10 @@ RBD_BT_long_qc %>%
 for(m in unique(RBD_BT_long_qc$Measure)) {
   data_m <- RBD_BT_long_qc %>% filter(Measure == m, !is.na(Value))
   
-  # Print skewness
+
   cat(m, "skewness:", round(skewness(data_m$Value), 2), "\n")
   
-  # Plot histogram + QQ plot side by side
+
   gridExtra::grid.arrange(
     ggplot(data_m, aes(x = Value)) +
       geom_histogram(aes(y = ..density..), bins = 30, fill = "#69b3a2", alpha = 0.6) +
@@ -505,7 +504,7 @@ calc_subject_variability <- function(long_df,
   stopifnot(all(c("Measure", id_col, group_col, time_col, value_col) %in% names(long_df)))
   stopifnot(all(measures %in% unique(long_df$Measure)))
   
-  # Helper: compute SD, Range, MSSD for one subject (already ordered by time)
+  # Helper: compute SD, Range, MSSD for one subject 
   subject_metrics <- function(x) {
     x <- x[!is.na(x)]
     if (length(x) == 0) {
@@ -782,22 +781,3 @@ summary_means <- RBD_BT_long_qc %>%
 
 print(summary_means, n = nrow(summary_means))
 
-
-
-#compute MSSD for graph
-mssd_person <- RBD_BT_long_qc %>%
- group_by(PID2, Code, Measure) %>%
- arrange(RelativeVisit, .by_group = TRUE) %>%
- summarise(
- mssd = {
- x <- Value
- x <- x[!is.na(x)]                # drop missing
- if (length(x) >= 2) {
- mean(diff(x)^2)
- } else {
- NA_real_
- }
- },
- n_timepoints = sum(!is.na(Value)),
- .groups = "drop"
- )
