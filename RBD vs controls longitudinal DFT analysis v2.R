@@ -68,7 +68,7 @@ RBD_control_DFT_data %>%
 RBD_control_DFT_data <- RBD_control_DFT_data %>%
   filter(gender != "Transgender/Nonbinary/Other")
 
-#need to reformat df so can run lme- year in separate rows rather than column
+#need to reformat df so can run lme
 RBD_control_DFT_data2 <- RBD_control_DFT_data %>%
   pivot_longer(
     cols = matches("onefingertaptest_worst_(at|is|ks)_(baseline|lastfollowup)$"),
@@ -289,7 +289,6 @@ t.test(onefingertaptest_worst_ks ~ Code, data = subset(df_filtered, Timepoint ==
 
 
 
-
 ##############   Linear Mixed Effect Regression    ##############
 #assign cases and controls to data sheet
 df_filtered2 <- df_filtered %>%
@@ -374,36 +373,6 @@ median_iqr <- function(x) {
   )
 }
 
-# Plot IS across years for cases vs controls (median + IQR)
-ggplot(df_filtered2, aes(x = Timepoint, y = onefingertaptest_worst_is, color = Code, group = Code)) +
-  stat_summary(fun = median, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = median, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = median_iqr, geom = "errorbar", width = 0.2, linewidth = 0.8) +
-  labs(
-    title = "DFT Incoordination Score at Baseline and Follow-up",
-    subtitle = "PSG_RBD vs. Controls",
-    x = "Timepoint",
-    y = "Median Incoordination Score (with IQR)",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"),
-                     labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14),
-    plot.subtitle = element_text(size = 12),         # keep subtitle readable
-    axis.text = element_text(size = 11),            # axis tick labels
-    axis.title.x = element_text(size = 12, face = "bold"),
-    axis.title.y = element_text(size = 12, face = "bold"),
-    legend.title = element_text(size = 12, face = "bold"),
-    legend.text = element_text(size = 11)
-  )
-
-
 
 # Kinesia score
 KS_model <- lmer(
@@ -427,29 +396,6 @@ KS <- tidy(KS_model, effects = "fixed", conf.int = TRUE) %>%
 print(KS)
 
 
-# Plot KS across years for cases vs controls
-ggplot(df_filtered2, aes(x = Timepoint, y = onefingertaptest_worst_ks, color = Code, group = Code)) +
-  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) +  # Changed here
-  labs(
-    title = "DFT Kinesia Score at Baseline and Follow-up",
-    subtitle = "PSG_RBD vs. Controls",
-    x = "Timepoint",
-    y = "Mean Kinesia Score",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"), labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14)
-  )
-
-
 
 # Akinesia Time
 AT_model <- lmer(
@@ -471,29 +417,6 @@ AT <- tidy(AT_model, effects = "fixed", conf.int = TRUE) %>%
   ) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3)))
 print(AT)
-
-
-# Plot AT across years for cases vs controls
-ggplot(df_filtered2, aes(x = Timepoint, y = onefingertaptest_worst_at, color = Code, group = Code)) +
-  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) + 
-  labs(
-    title = "DFT Akinesia Time at Baseline and Follow-up",
-    subtitle = "PSG_RBD vs. Controls",
-    x = "Timepoint",
-    y = "Mean Akinesia Time",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"), labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14)
-  )
 
 
 #### check linearity of age
