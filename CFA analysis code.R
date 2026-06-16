@@ -94,7 +94,6 @@ BT_long <- BT_all %>%
   )
 
 #wide format for latent variable analysis.
-#designed for specifying, estimating, and evaluating latent variable models such as confirmatory factor analysis
 BT_wide <- BT_long %>%
   pivot_wider(
     id_cols = c(PID2, Code),
@@ -122,10 +121,6 @@ BT_wide <- BT_wide %>%
   )
 
 ###### CFA analysis ######
-#now building a longitudinal CFA
-#each time point has a latent factor
-#the same construct is measured across time
-
 #change ks direction
 BT_wide <- BT_wide %>%
   mutate(across(
@@ -153,7 +148,6 @@ fit <- cfa(model, data = BT_wide_scaled, missing = "fiml")
 summary(fit, fit.measures = TRUE, standardized = TRUE)
 
 ## configure model
-#to confirm the same factor structure fits across all timepoints before testing any equality constraints
 model_configural <- '
 F1 =~ at_t1 + is_t1 + ks_t1
 F2 =~ at_t2 + is_t2 + ks_t2
@@ -214,9 +208,6 @@ summary(fit_partial, fit.measures = TRUE)
 #Metric CFI = 0.719 (drop ≈ 0.019 → too big
 #Partial CFI = 0.737 (back to ~configural)
 # - partial invariance is supported, because freeing is_t3 fixed the drop in fit
-
-# at and ks behave consistently across time
-# is does NOT behave the same at time 3, so you correctly freed it
 # composite is now valid enough to compare over time
 
 #extract variables from partical invariance model
@@ -224,7 +215,7 @@ BT_scores <- lavPredict(fit_partial)
 print(BT_scores)
 
 
-# Same for TMT 
+#TMT 
 #create TMT master data set
 RBD_control_TMT_data <- RBD_control_TMT_data %>%
   mutate(PID2 = as.character(PID2))
@@ -319,7 +310,7 @@ F3 =~ tmtA_t3 + tmtB_t3 + tmtAB_t3
 fit_tmt_3wave <- cfa(model_tmt_3wave,
                      data = TMT_wide,
                      missing = "fiml")
-#TMT does not support a stable longitudinal latent factor model in your dataset
+#TMT does not support a stable longitudinal latent factor model
 
 #check within-wave correlations
 cor(TMT_wide[, c("tmtA_t1","tmtB_t1","tmtAB_t1")], use="pairwise.complete.obs")
@@ -388,9 +379,8 @@ summary(final_data$overall_comp_t3)
 colSums(is.na(final_data[, c("overall_comp_t1",
                              "overall_comp_t2",
                              "overall_comp_t3")]))
-#final outcome is a hybrid: BT+TMT when possible, but mostly BT as missingness increases
 
-#model how composite outcome changes over time (longitudinal analysis)
+#model how composite outcome changes over time
 #reshape data to long format
 final_long <- final_data %>%
   pivot_longer(
