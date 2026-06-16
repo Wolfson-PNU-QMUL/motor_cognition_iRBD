@@ -13,7 +13,7 @@ library(ggdist)
 library(nlme)
 library(lme4)
 library(lmerTest)
-library(nlme) # for heteroscedastic LMEs
+library(nlme)
 library(tidybayes)
 library(moments)
 
@@ -60,7 +60,6 @@ write.csv(matched_sRBD_control_TMT_data2, "TMT/sRBD vs controls/matched_sRBD_con
           row.names = FALSE)
 
 
-
 ######## Exploratory data analysis #########
 # List of your TMT columns
 cols_tmt <- c(
@@ -86,7 +85,7 @@ cols_to_convert <- c(
 matched_sRBD_control_TMT_data2[cols_to_convert] <- lapply(matched_sRBD_control_TMT_data2[cols_to_convert], as.numeric)
 
 
-#remove participants with ALL brain test data missing 
+#remove participants with ALL test data missing 
 matched_sRBD_control_TMT_data2 <- matched_sRBD_control_TMT_data2 %>%
   filter(
     rowSums(is.na(select(., all_of(cols_to_convert)))) <
@@ -94,7 +93,7 @@ matched_sRBD_control_TMT_data2 <- matched_sRBD_control_TMT_data2 %>%
   )
 
 
-# Pivot to long format but keep all non-brain test columns
+# Pivot to long format but keep all non test columns
 sRBD_TMT_long <- matched_sRBD_control_TMT_data2 %>%
   pivot_longer(
     cols = all_of(cols_tmt),
@@ -116,10 +115,10 @@ sRBD_TMT_long %>%
   count(Measure, n)
 
 sRBD_TMT_long %>%
-  filter(!is.na(Value)) %>%                       # only observed values
+  filter(!is.na(Value)) %>%                   
   group_by(Measure, PID2) %>%
-  summarise(n_obs = n(), .groups = "drop") %>%    # number of observed timepoints
-  filter(n_obs == 4) %>%                          # complete 4
+  summarise(n_obs = n(), .groups = "drop") %>%  
+  filter(n_obs == 4) %>%                       
   count(Measure, name = "n_IDs_complete_4tp")
 
 
@@ -129,7 +128,7 @@ sRBD_TMT_long_all <- sRBD_TMT_long %>%
   group_by(PID2, Code, Measure) %>%
   filter(n() >= 2) %>%                 
   arrange(Session, .by_group = TRUE) %>%
-  mutate(RelativeVisit = row_number()) %>%   # recompute visit order
+  mutate(RelativeVisit = row_number()) %>%  
   ungroup()
 
 sRBD_TMT_long_all %>%
@@ -157,7 +156,6 @@ sRBD_TMT_long_qc <- sRBD_TMT_long_all %>%
       TRUE ~ Value
     )
   )
-
 
 
 # Raincloud plot
@@ -188,7 +186,6 @@ for (v in visits) {
   
   print(p)
 }
-
 
 
 #check for outliers
@@ -326,7 +323,6 @@ normality_results <- sRBD_TMT_long_qc %>%
 normality_results
 
 
-
 #inspect visually
 # Loop through each measure
 for(m in unique(sRBD_TMT_long_qc$Measure)) {
@@ -351,9 +347,6 @@ for(m in unique(sRBD_TMT_long_qc$Measure)) {
     ncol = 2
   )
 }
-
-
-
 
 
 ######### Variance Analysis ######### 
@@ -398,7 +391,6 @@ variance_boot <- sRBD_TMT_long_qc %>%
 print(variance_boot, n = Inf, width = Inf)
 
 write.csv(variance_boot, "TMT/sRBD vs controls/variance_boot_sRBD.csv", row.names = FALSE)
-
 
 
 #Step 1c — Plot mean ± SD with bootstrap CI
@@ -454,8 +446,6 @@ for (m in measures) {
 write.csv(plot_data, "TMT/sRBD vs controls/TMT_mean_SD_bootstrap_sRBD.csv", row.names = FALSE)
 
 
-
-
 #Step 2: subject-level variance (“wobblers”) + wilcoxon rank
 calc_subject_variability <- function(long_df,
                                      measures,
@@ -480,7 +470,7 @@ calc_subject_variability <- function(long_df,
     c(n_timepoints = length(x), sd_subject = sdv, range_subject = rgv, mssd = msv)
   }
   
-  # 1) One row per participant × measure with SD, Range, MSSD
+  # One row per participant × measure with SD, Range, MSSD
   subj_tbl <- long_df %>%
     dplyr::filter(.data$Measure %in% measures) %>%
     dplyr::arrange(.data[[id_col]], .data$Measure, .data[[time_col]]) %>%
@@ -489,7 +479,7 @@ calc_subject_variability <- function(long_df,
                      .groups = "drop") %>%
     tidyr::unnest_wider(metrics)
   
-  # 2) Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
+  # Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
   metrics_to_test <- c("sd_subject", "range_subject", "mssd")
   wilcox_rows <- list()
   
@@ -531,7 +521,6 @@ calc_subject_variability <- function(long_df,
   
   list(subject_metrics = subj_tbl, wilcox_tests = wilcox_tbl)
 }
-
 
 
 #Step 2b: run
@@ -604,7 +593,6 @@ wilcox_table <- stat_results_all %>%
 wilcox_table
 
 
-
 #	Model time-varying variance (heteroscedastic mixed model)
 #Filter Trail A RT scores
 taRT_data <- sRBD_TMT_long_qc %>% 
@@ -641,7 +629,6 @@ anova(lme_hom, lme_varident)
 summary(lme_varident)
 
 
-
 # Filter Trail B RT scores
 tbRT_data <- sRBD_TMT_long_qc %>% 
   filter(Measure == "tmt_trailB_reactiontime")
@@ -669,9 +656,6 @@ anova(lme_hom_bRT, lme_varident_bRT)
 summary(lme_varident_bRT)
 
 
-
-
-
 # Filter EF scores
 EF_data <- sRBD_TMT_long_qc %>% 
   filter(Measure == "tmt_trailAminustrailB_exefcn_final")
@@ -697,7 +681,6 @@ lme_varident_EF <- update(
 anova(lme_hom_EF, lme_varident_EF)
 
 summary(lme_varident_EF)
-
 
 
 ###### demographics ###### 
@@ -754,60 +737,3 @@ summary_means <- sRBD_TMT_long_qc %>%
          n_sRBD, sRBD_mean_sd, p_value)
 
 print(summary_means, n = Inf, width = Inf)
-
-
-
-
-#compute MSSD for heatmap
-mssd_person <- sRBD_TMT_long_3tp  %>%
-  group_by(PID2, Code, Measure) %>%
-  arrange(RelativeVisit, .by_group = TRUE) %>%
-  summarise(
-    mssd = mean(diff(Value)^2, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-#Group-level MSSD per Measure
-mssd_group <- mssd_person %>%
-  group_by(Measure, Code) %>%
-  summarise(
-    mssd_mean = mean(mssd, na.rm = TRUE),
-    n = n(),
-    .groups = "drop"
-  )
-
-mssd_ctrl <- mssd_group %>%
-  filter(Code == "Control") %>%
-  select(Measure, mssd_ctrl = mssd_mean)
-
-mssd_case <- mssd_group %>%
-  filter(Code == "sRBD") %>%
-  select(Measure, mssd_case = mssd_mean)
-
-mssd_delta <- mssd_case %>%
-  left_join(mssd_ctrl, by = "Measure") %>%
-  mutate(
-    delta_mssd = mssd_case - mssd_ctrl,
-    Comparison = "Normosmic pRBD vs Control"
-  ) %>%
-  select(Comparison, Measure, delta_mssd)
-
-print(mssd_delta, n = nrow(mssd_delta))
-
-#save
-dir.create("MSSD_tables", showWarnings = FALSE)
-
-write.csv(
-  mssd_delta,
-  "MSSD_tables/mssd_sRBD_vs_control_TMT.csv",
-  row.names = FALSE
-)
-
-
-
-
-
-
-
-
-
