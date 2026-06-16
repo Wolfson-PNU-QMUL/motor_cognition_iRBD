@@ -106,7 +106,7 @@ matched_RBD_control_DFT_data2 <- matched_RBD_control_DFT_data2 %>%
   )
 
 
-# Pivot to long format but keep all non-brain test columns
+# Pivot to long format but keep all non test columns
 RBD_DFT_long <- matched_RBD_control_DFT_data2 %>%
   pivot_longer(
     cols = all_of(cols_dft),                # only pivot DFT columns
