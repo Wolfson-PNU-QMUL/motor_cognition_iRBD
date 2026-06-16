@@ -49,7 +49,7 @@ sRBD_control_TMT_data <- sRBD_control_TMT_data %>%
   filter(gender != "Transgender/Nonbinary/Other")
 
 
-#need to reformat df so can run lme- year in separate rows rather than column
+#need to reformat df
 sRBD_control_TMT_data2 <- sRBD_control_TMT_data %>%
   pivot_longer(
     cols = c(
@@ -262,8 +262,6 @@ sum(is.na(sRBD_control_TMT_data2_clean$tmt_date_baseline))
 sum(is.na(sRBD_control_TMT_data2_clean$tmt_date_lastfollowup))
 
 
-
-
 ### check distribution of data- density plots
 ggplot(sRBD_control_TMT_data2_clean, aes(x=age_session_baseline, group=Code, fill=Code)) +
   geom_density(alpha=.5)+ scale_fill_manual(values=c("#009E73","#E69F00")) + theme_minimal() +
@@ -344,7 +342,6 @@ ggplot(df_filtered, aes(x = tmt_trailB_reactiontime, group = interaction(Code, T
 
 
 
-
 #### demographics ####
 table(df_filtered$Code, df_filtered$Timepoint)
 
@@ -386,9 +383,7 @@ t.test(tmt_trailB_accuracy ~ Code, data = subset(df_filtered, Timepoint == "Foll
 
 t.test(tmt_trailB_reactiontime ~ Code, data = subset(df_filtered, Timepoint == "Baseline"))
 t.test(tmt_trailB_reactiontime ~ Code, data = subset(df_filtered, Timepoint == "Follow-up"))
-
-
-### change education levels to secondary yes or no 
+ 
 df_filtered <- df_filtered %>%
   mutate(education = ifelse(education_level %in% c("Secondary", "Further", "Higher"), "Yes", "No"))
 
@@ -399,7 +394,6 @@ education <- df_filtered %>%
   ungroup()
 print(education)
 fisher.test(table(df_filtered$Code, df_filtered$education))$p.value
-
 
 
 ##############   Linear Mixed Effect Regression    ##############
@@ -419,14 +413,13 @@ df_filtered2 <- df_filtered2 %>%
   )
 
 
-#to avoid collinearity (similar data) produce elapsed_time- true time difference for each participant:
+#to avoid collinearity produce elapsed_time
 df_filtered2 <- df_filtered2 %>%
   group_by(PID2) %>%
   mutate(
     elapsed_time = as.numeric(difftime(tmt_date_lastfollowup, min(tmt_date_baseline), units = "days")) / 365.25
   ) %>%
   ungroup()
-
 
 
 # check mean followup time
@@ -452,7 +445,6 @@ df_filtered2 %>%
     max_followup    = max(followup_years, na.rm = TRUE),
     n_participants  = n()
   )
-
 
 
 # Standardize reaction times
@@ -486,31 +478,6 @@ ART <- tidy(ART_model, effects = "fixed", conf.int = TRUE) %>%
 print(ART)
 
 
-# Plot ART across years for cases vs controls
-ggplot(df_filtered2, aes(x = Timepoint, y = tmt_trailA_reactiontime, color = Code, group = Code)) +
-  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) +
-  labs(
-    title = "Trail A Reaction Time at Baseline and Follow-up",
-    subtitle = "sRBD vs. Controls",
-    x = "Timepoint",
-    y = "Mean Reaction Time",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"),
-                     labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14)
-  )
-
-
-
 # Trail B reaction time
 BRT_model <- lmer(
   TrailB_negZ ~ elapsed_time * Code + age_session_baseline + gender + education_level + (1 | PID2),
@@ -533,31 +500,6 @@ BRT <- tidy(BRT_model, effects = "fixed", conf.int = TRUE) %>%
 print(BRT)
 
 
-# Plot BRT across years for cases vs controls
-ggplot(df_filtered2, aes(x = Timepoint, y = tmt_trailB_reactiontime, color = Code, group = Code)) +
-  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) +
-  labs(
-    title = "Trail B Reaction Time at Baseline and Follow-up",
-    subtitle = "sRBD vs. Controls",
-    x = "Timepoint",
-    y = "Mean Reaction Time",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"),
-                     labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14)
-  )
-
-
-
 # Executive function
 EF_model <- lmer(
   tmt_trailAminustrailB_exefcn_final ~ elapsed_time * Code + age_session_baseline + gender + education_level + (1 | PID2),
@@ -578,31 +520,6 @@ EF <- tidy(EF_model, effects = "fixed", conf.int = TRUE) %>%
   ) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3)))
 print(EF)
-
-
-# Plot EF across years for cases vs controls
-ggplot(df_filtered2, aes(x = Timepoint, y = tmt_trailAminustrailB_exefcn_final, color = Code, group = Code)) +
-  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) +
-  labs(
-    title = "Executive Function at Baseline and Follow-up",
-    subtitle = "sRBD vs. Controls",
-    x = "Timepoint",
-    y = "Mean Executive Function",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"),
-                     labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14)
-  )
-
 
 
 #### check linearity of age
