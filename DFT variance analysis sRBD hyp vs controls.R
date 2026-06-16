@@ -13,7 +13,7 @@ library(ggdist)
 library(nlme)
 library(lme4)
 library(lmerTest)
-library(nlme) # for heteroscedastic LMEs
+library(nlme) 
 library(tidybayes)
 library(moments)
 
@@ -40,7 +40,6 @@ matched_sRBD_hyp_control_DFT_data %>%
   count(PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 
 
-# Define the columns of interest
 dft_cols <- c(
   "onefingertaptest_right_at_baseline", "onefingertaptest_right_at_lastfollowup",
   "onefingertaptest_right_is_baseline", "onefingertaptest_right_is_lastfollowup",
@@ -71,8 +70,6 @@ write.csv(matched_sRBD_hyp_control_DFT_data2, "DFT/sRBD hyp vs controls/matched_
           row.names = FALSE)
 
 
-
-
 ######## Exploratory data analysis #########
 # List of your DFT columns
 cols_dft <- c(
@@ -93,15 +90,14 @@ matched_sRBD_hyp_control_DFT_data2[cols_to_convert] <- lapply(matched_sRBD_hyp_c
 
 str(matched_sRBD_hyp_control_DFT_data2)
 
-#remove participants with ALL brain test data missing 
+#remove participants with ALL test data missing 
 matched_sRBD_hyp_control_DFT_data2 <- matched_sRBD_hyp_control_DFT_data2 %>%
   filter(
     rowSums(is.na(select(., starts_with("onefingertaptest_worst")))) <
       ncol(select(., starts_with("onefingertaptest_worst")))
   )
 
-
-# Pivot to long format but keep all non-brain test columns
+# Pivot to long format but keep all non test columns
 sRBD_hyp_DFT_long <- matched_sRBD_hyp_control_DFT_data2 %>%
   pivot_longer(
     cols = c(
@@ -310,7 +306,6 @@ for(m in unique(sRBD_hyp_DFT_long_2tp$Measure)) {
 }
 
 
-
 #AT is skewed
 # log transform AT
 sRBD_hyp_DFT_long_2tp <- sRBD_hyp_DFT_long_2tp %>%
@@ -322,7 +317,6 @@ sRBD_hyp_DFT_long_2tp <- sRBD_hyp_DFT_long_2tp %>%
       TRUE ~ Value_num
     )
   )
-
 
 
 ######### Variance Analysis ######### 
@@ -340,7 +334,6 @@ print(variance_summary)
 
 
 #Step 1b — Bootstrap SD for confidence intervals (small sample size)
-# Function to compute SD for bootstrapping
 sd_fun <- function(data, indices) {
   return(sd(data[indices], na.rm = TRUE))
 }
@@ -369,7 +362,6 @@ print(variance_boot, n = Inf, width = Inf)
 write.csv(variance_boot, "DFT/sRBD hyp vs controls/variance_boot.csv", row.names = FALSE)
 
 
-
 #Step 1c — Plot mean ± SD with bootstrap CI
 # Combine mean and bootstrap SD
 plot_data <- variance_summary %>%
@@ -391,7 +383,6 @@ measure_direction <- c(
   "onefingertaptest_worst_at" = "Higher = worse",
   "onefingertaptest_worst_ks" = "Lower = worse"
 )
-
 
 
 plot_data <- plot_data %>%
@@ -429,8 +420,6 @@ for (m in measures) {
 write.csv(plot_data, "DFT/sRBD hyp vs controls/DFT_mean_SD_bootstrap_sRBD_hyp.csv", row.names = FALSE)
 
 
-
-
 #Step 2: subject-level variance (“wobblers”) + wilcoxon rank
 calc_subject_variability <- function(long_df,
                                      measures,
@@ -443,7 +432,7 @@ calc_subject_variability <- function(long_df,
   stopifnot(all(c("Measure", id_col, group_col, time_col, value_col) %in% names(long_df)))
   stopifnot(all(measures %in% unique(long_df$Measure)))
   
-  # Helper: compute SD, Range, MSSD for one subject (already ordered by time)
+  #compute SD, Range, MSSD for one subject (already ordered by time)
   subject_metrics <- function(x) {
     x <- x[!is.na(x)]
     if (length(x) == 0) {
@@ -455,7 +444,7 @@ calc_subject_variability <- function(long_df,
     c(n_timepoints = length(x), sd_subject = sdv, range_subject = rgv, mssd = msv)
   }
   
-  # 1) One row per participant × measure with SD, Range, MSSD
+  # One row per participant × measure with SD, Range, MSSD
   subj_tbl <- long_df %>%
     dplyr::filter(.data$Measure %in% measures) %>%
     dplyr::arrange(.data[[id_col]], .data$Measure, .data[[time_col]]) %>%
@@ -464,7 +453,7 @@ calc_subject_variability <- function(long_df,
                      .groups = "drop") %>%
     tidyr::unnest_wider(metrics)
   
-  # 2) Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
+  # Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
   metrics_to_test <- c("sd_subject", "range_subject", "mssd")
   wilcox_rows <- list()
   
@@ -506,8 +495,6 @@ calc_subject_variability <- function(long_df,
   
   list(subject_metrics = subj_tbl, wilcox_tests = wilcox_tbl)
 }
-
-
 
 
 #Step 2b: run
@@ -580,8 +567,6 @@ wilcox_table <- stat_results_all %>%
 wilcox_table
 
 
-
-
 #Step 3:	Model time-varying variance (heteroscedastic mixed model)
 # Filter IS scores
 IS_data <- sRBD_hyp_DFT_long_2tp %>% 
@@ -608,7 +593,6 @@ lme_varident <- update(
 anova(lme_hom, lme_varident)
 
 summary(lme_hom)
-
 
 
 # Filter AT scores
@@ -638,7 +622,6 @@ anova(lme_hom_AT, lme_varident_AT)
 summary(lme_hom_AT)
 
 
-
 # Filter KS scores
 KS_data <- sRBD_hyp_DFT_long_2tp %>% 
   filter(Measure == "onefingertaptest_worst_ks")
@@ -664,8 +647,6 @@ lme_varident_KS <- update(
 anova(lme_hom_KS, lme_varident_KS)
 
 summary(lme_hom_KS)
-
-
 
 
 ###### demographics ###### 
@@ -729,48 +710,6 @@ summary_means <- sRBD_hyp_DFT_long_2tp %>%
 
 print(summary_means, n = Inf, width = Inf)
 
-
-
-
-
-#compute MSSD for heatmap
-mssd_person <- sRBD_hyp_DFT_long_2tp %>%
-  group_by(PID2, Code, Measure) %>%
-  arrange(RelativeVisit, .by_group = TRUE) %>%
-  summarise(
-    mssd = mean(diff(Value)^2, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-#Group-level MSSD per Measure
-mssd_group <- mssd_person %>%
-  group_by(Measure, Code) %>%
-  summarise(
-    mssd_mean = mean(mssd, na.rm = TRUE),
-    n = n(),
-    .groups = "drop"
-  )
-
-mssd_ctrl <- mssd_group %>%
-  filter(Code == "Control") %>%
-  select(Measure, mssd_ctrl = mssd_mean)
-
-mssd_case <- mssd_group %>%
-  filter(Code == "sRBD_hyposmia") %>%
-  select(Measure, mssd_case = mssd_mean)
-
-mssd_delta <- mssd_case %>%
-  left_join(mssd_ctrl, by = "Measure") %>%
-  mutate(
-    delta_mssd = mssd_case - mssd_ctrl,
-    Comparison = "pRBD with hyposmia vs Control"
-  ) %>%
-  select(Comparison, Measure, delta_mssd)
-
-print(mssd_delta, n = nrow(mssd_delta))
-
-#save
-dir.create("MSSD_tables", showWarnings = FALSE)
 
 write.csv(
   mssd_delta,
