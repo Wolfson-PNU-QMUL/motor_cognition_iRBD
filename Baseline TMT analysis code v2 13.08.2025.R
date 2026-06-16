@@ -4,8 +4,8 @@ library(ggplot2)
 library(readr)
 library(readxl)
 library(moments)
-library(broom) # to tidy
-library(ResourceSelection) # for Hosmer-Lemeshow test 
+library(broom)
+library(ResourceSelection)
 
 
 RBD_control_TMT_data <- read_csv("RBD_control_TMT_data.csv")
@@ -80,7 +80,7 @@ any(RBD_control_baseline_data2$tmt_trailAminustrailB_exefcn_final_baseline == 0)
 any(RBD_control_baseline_data2$tmt_trailB_reactiontime_baseline == 0)
 any(RBD_control_baseline_data2$tmt_trailA_reactiontime_baseline == 0)
 
-# have 0s remove 
+ 
 RBD_control_baseline_data2 <- RBD_control_baseline_data2 %>%
   filter(
     abs(tmt_trailAminustrailB_exefcn_final_baseline ) > 1e-6,
@@ -148,7 +148,7 @@ ggplot(RBD_control_baseline_data2, aes(y = tmt_trailB_accuracy_baseline)) +
     panel.grid.major.x = element_blank()
   )
 
-# have outliers check what cohort they belong to
+
 Q1 <- quantile(RBD_control_baseline_data2$tmt_trailAminustrailB_exefcn_final_baseline, 0.25, na.rm = TRUE)
 Q3 <- quantile(RBD_control_baseline_data2$tmt_trailAminustrailB_exefcn_final_baseline, 0.75, na.rm = TRUE)
 IQR <- Q3 - Q1
@@ -211,7 +211,6 @@ RBD_control_baseline_data2_clean <- RBD_control_baseline_data2 %>%
 str(RBD_control_baseline_data2_clean)
 
 
-# Check for missing values in specific columns
 sum(is.na(RBD_control_baseline_data2_clean$gender))
 sum(is.na(RBD_control_baseline_data2_clean$age_session_baseline))
 
@@ -350,7 +349,6 @@ t.test(tmt_trailB_accuracy_baseline ~ Code, data = RBD_control_baseline_data2_cl
 
 t.test(tmt_trailB_reactiontime_baseline ~ Code, data = RBD_control_baseline_data2_clean)
 
-#change education levels to secondary yes or no 
 RBD_control_baseline_data2_clean <- RBD_control_baseline_data2_clean %>%
   mutate(education = ifelse(education_level %in% c("Secondary", "Further", "Higher"), "Yes", "No"))
 
@@ -438,7 +436,6 @@ anova(model_execfunc2, model_age_quad_ef)
 final_model_EF <- model_age_quad_ef
 
 
-
 #Trail B reaction time
 ggplot(RBD_control_baseline_data2_clean, aes(x = age_session_baseline, y = fitted(model_reactiontimeB2))) +
   geom_point(alpha = 0.3) +
@@ -493,8 +490,6 @@ tidy(final_model_EF, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE)
 
 tidy(final_model_RTB, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE)
 
-
-
 #### Hosmer-Lemeshow test to check if the model fits ####
 #RTA
 RBD_control_baseline_data2_clean$Code_numeric <- as.numeric(as.character(RBD_control_baseline_data2_clean$Code))
@@ -516,155 +511,4 @@ hoslem.test(x = RBD_control_baseline_data2_clean$Code_numeric,
             g = 10)
 
 
-
-
-### Create Forest plots ###
-#RTA
-# Extract ORs and 95% CIs
-OR_data <- as.data.frame(exp(cbind(OR = coef(final_model_RTA), confint(final_model_RTA))))
-OR_data$Variable <- rownames(OR_data)
-
-# Replace raw variable names with  labels
-OR_data$Variable <- recode(OR_data$Variable,
-                           "(Intercept)" = "Intercept",
-                           "tmt_trailA_reactiontime_baseline_z" = "Trail A RT (z-score)",
-                           "genderMale" = "Male (vs Female)",
-                           "age_session_baseline" = "Age",
-                           "age_baseline_sq" = "Age²",
-                           "educationYes" = "Education (Yes)"
-)
-
-# Exclude Intercept for clarity
-ggplot(OR_data[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(linewidth = 3, color = "#2c7fb8") +   # <- size, not linewidth
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2, color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-
-#EF
-# Extract ORs and 95% CIs
-OR_data_EF <- as.data.frame(exp(cbind(OR = coef(final_model_EF), confint(final_model_EF))))
-OR_data_EF$Variable <- rownames(OR_data_EF)
-
-# Replace raw variable names with  labels
-OR_data_EF$Variable <- recode(OR_data_EF$Variable,
-                           "(Intercept)" = "Intercept",
-                           "tmt_trailAminustrailB_exefcn_final_baseline_z" = "Executive Function (z-score)",
-                           "genderMale" = "Male (vs Female)",
-                           "age_session_baseline" = "Age",
-                           "age_baseline_sq" = "Age²",
-                           "educationYes" = "Education (Yes)"
-)
-
-# Exclude Intercept for clarity
-ggplot(OR_data_EF[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(size = 3, color = "#2c7fb8") +   # <- size, not linewidth
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2, color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-
-
-#RTB
-# Extract ORs and 95% CIs
-OR_data_RTB <- as.data.frame(exp(cbind(OR = coef(final_model_RTB), confint(final_model_RTB))))
-OR_data_RTB$Variable <- rownames(OR_data_RTB)
-
-# Replace raw variable names with  labels
-OR_data_RTB$Variable <- recode(OR_data_RTB$Variable,
-                              "(Intercept)" = "Intercept",
-                              "tmt_trailB_reactiontime_baseline_z" = "Trail B RT (z-score)",
-                              "genderMale" = "Male (vs Female)",
-                              "age_session_baseline" = "Age",
-                              "age_baseline_sq" = "Age²",
-                              "educationYes" = "Education (Yes)"
-)
-
-# Exclude Intercept for clarity
-ggplot(OR_data_RTB[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(size = 3, color = "#2c7fb8") +   # <- size, not linewidth
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2, color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-
-# collate into one forest plot
-RTA_data <- tidy(final_model_RTA, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE) %>%
-  filter(term == "tmt_trailA_reactiontime_baseline_z") %>%
-  mutate(Variable = "Reaction Time (Trail A)")
-
-EF_data <- tidy(final_model_EF, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE) %>%
-  filter(term == "tmt_trailAminustrailB_exefcn_final_baseline_z") %>%
-  mutate(Variable = "Executive Function")
-
-RTB_data <- tidy(final_model_RTB, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE) %>%
-  filter(term == "tmt_trailB_reactiontime_baseline_z") %>%
-  mutate(Variable = "Reaction Time (Trail B)")
-
-all_TMT_variables <- bind_rows(RTA_data, EF_data, RTB_data) %>%
-  mutate(p_label = ifelse(p.value < 0.001, "<0.001", sprintf("%.3f", p.value)))
-
-ggplot(all_TMT_variables, aes(x = estimate, y = Variable)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high),
-                 height = 0.2, size = 1.2, color = "#2c7fb8") +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "grey50", size = 1) +
-  geom_text(aes(label = paste("p", p_label), x = conf.high * 1.15), 
-            hjust = 0, size = 4.2, color = "black") +
-  scale_x_log10(limits = c(0.5, 3.5)) +  # ← sets fixed axis range
-  labs(title = "Baseline Associations of TMT Scores with PSG-iRBD vs. Controls",
-       subtitle = "Odds Ratios from Logistic Regression Adjusted for Age, Gender and Education",
-       x = "Odds Ratio (log scale)", y = "") +
-  theme_minimal(base_size = 14)
-
-
-#extract data for overall forest plot
-extract_row <- function(model, term, variable, test, comparison,
-                        conf_level = 0.95) {
-  tidy(model, conf.int = TRUE, conf.level = conf_level, exponentiate = TRUE) %>%
-    filter(term == !!term) %>%
-    mutate(
-      Variable   = variable,
-      Test       = test,
-      Comparison = comparison
-    ) %>%
-    select(Test, Comparison, Variable, estimate, conf.low, conf.high, p.value)
-}
-
-
-TMT_df <- bind_rows(
-  extract_row(final_model_RTA,
-              "tmt_trailA_reactiontime_baseline_z",
-              "Reaction Time (Trail A)",
-              test = "TMT", comparison = "PSG-iRBD vs control"),
-  extract_row(final_model_EF,
-              "tmt_trailAminustrailB_exefcn_final_baseline_z",
-              "Executive Function",
-              test = "TMT", comparison = "PSG-iRBD vs control"),
-  extract_row(final_model_RTB,
-              "tmt_trailB_reactiontime_baseline_z",
-              "Reaction Time (Trail B)",
-              test = "TMT", comparison = "PSG-iRBD vs control")
-)
-
-saveRDS(TMT_df, "Pilot/Baseline/RBD vs controls/forest_rows_TMT_RBD.rds")
 
