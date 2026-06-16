@@ -13,7 +13,7 @@ library(ggdist)
 library(nlme)
 library(lme4)
 library(lmerTest)
-library(nlme) # for heteroscedastic LMEs
+library(nlme) 
 
 matched_sRBD_control_BT_data <- read_csv("BRAIN test/sRBD vs controls/matched_sRBD_control_BT_data.csv")
 View(matched_sRBD_control_BT_data)
@@ -45,7 +45,7 @@ matched_sRBD_control_BT_data <-
                      braintest_worst_ks_0, braintest_worst_ks_1, braintest_worst_ks_2, braintest_worst_ks_3))
 
 
-#remove participants with ALL brain test data missing 
+#remove participants with ALL test data missing 
 matched_sRBD_control_BT_data2 <- matched_sRBD_control_BT_data %>%
   filter(
     rowSums(is.na(select(., starts_with("braintest_worst")))) <
@@ -76,8 +76,6 @@ write.csv(matched_sRBD_control_BT_data2, "BRAIN test/sRBD vs controls/matched_sR
           row.names = FALSE)
 
 
-
-
 ######## Exploratory data analysis #########
 #merge KS and KS_adj
 matched_sRBD_control_BT_data2 <- matched_sRBD_control_BT_data2 %>%
@@ -105,7 +103,7 @@ cols_to_convert <- c( "braintest_worst_at_adj_4", "braintest_worst_at_adj_5", "b
 matched_sRBD_control_BT_data2[cols_to_convert] <- lapply(matched_sRBD_control_BT_data2[cols_to_convert], as.numeric)
 
 
-#remove participants with ALL brain test data missing 
+#remove participants with ALL test data missing 
 matched_sRBD_control_BT_data2 <- matched_sRBD_control_BT_data2 %>%
   filter(
     rowSums(is.na(select(., starts_with("braintest_worst")))) <
@@ -113,8 +111,7 @@ matched_sRBD_control_BT_data2 <- matched_sRBD_control_BT_data2 %>%
   )
 
 
-
-# Pivot to long format but keep all non-brain test columns
+# Pivot to long format but keep all non test columns
 sRBD_BT_long <- matched_sRBD_control_BT_data2 %>%
   pivot_longer(
     cols = all_of(cols_bt),                # only pivot brain test columns
@@ -136,10 +133,10 @@ sRBD_BT_long %>%
   count(Measure, n)
 
 sRBD_BT_long %>%
-  filter(!is.na(Value)) %>%                       # only observed values
+  filter(!is.na(Value)) %>%                    
   group_by(Measure, PID2) %>%
-  summarise(n_obs = n(), .groups = "drop") %>%    # number of observed timepoints
-  filter(n_obs == 4) %>%                          # complete 4
+  summarise(n_obs = n(), .groups = "drop") %>%  
+  filter(n_obs == 4) %>%                      
   count(Measure, name = "n_IDs_complete_4tp")
 
 
@@ -149,14 +146,13 @@ sRBD_BT_long_all <- sRBD_BT_long %>%
   group_by(PID2, Code, Measure) %>%
   filter(n() >= 2) %>%                 
   arrange(Session, .by_group = TRUE) %>%
-  mutate(RelativeVisit = row_number()) %>%   # recompute visit order
+  mutate(RelativeVisit = row_number()) %>%  
   ungroup()
 
 sRBD_BT_long_all %>%
   group_by(Measure, PID2) %>%
   summarise(n = n(), .groups = "drop") %>%
   count(Measure, n)
-
 
 
 # Raincloud plot
@@ -373,8 +369,6 @@ for(m in unique(sRBD_BT_long_qc$Measure)) {
 }
 
 
-
-
 ######### Variance Analysis ######### 
 #Step 1a — Compute mean, SD, and sample size per group × year × measure
 variance_summary <- sRBD_BT_long_qc %>%
@@ -503,7 +497,7 @@ calc_subject_variability <- function(long_df,
     c(n_timepoints = length(x), sd_subject = sdv, range_subject = rgv, mssd = msv)
   }
   
-  # 1) One row per participant × measure with SD, Range, MSSD
+  # One row per participant × measure with SD, Range, MSSD
   subj_tbl <- long_df %>%
     dplyr::filter(.data$Measure %in% measures) %>%
     dplyr::arrange(.data[[id_col]], .data$Measure, .data[[time_col]]) %>%
@@ -512,7 +506,7 @@ calc_subject_variability <- function(long_df,
                      .groups = "drop") %>%
     tidyr::unnest_wider(metrics)
   
-  # 2) Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
+  # Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
   metrics_to_test <- c("sd_subject", "range_subject", "mssd")
   wilcox_rows <- list()
   
@@ -625,7 +619,6 @@ wilcox_table <- stat_results_all %>%
 wilcox_table
 
 
-
 #Step 3: Model time-varying variance (heteroscedastic mixed model)
 # Filter IS scores
 IS_data <- sRBD_BT_long_qc %>% 
@@ -680,7 +673,6 @@ anova(lme_hom_AT, lme_varident_AT)
 summary(lme_varident_AT)
 
 
-
 # Filter KS scores
 KS_data <- sRBD_BT_long_qc %>% 
   filter(Measure == "braintest_worst_ks")
@@ -706,7 +698,6 @@ lme_varident_KS <- update(
 anova(lme_hom_KS, lme_varident_KS)
 
 summary(lme_varident_KS)
-
 
 
 ###### demographics ###### 
@@ -768,23 +759,3 @@ summary_means <- sRBD_BT_long_qc %>%
 
 
 print(as.data.frame(summary_means))
-
-
-
-#compute MSSD for graph
-mssd_person <- sRBD_BT_long_qc %>%
-  group_by(PID2, Code, Measure) %>%
-  arrange(RelativeVisit, .by_group = TRUE) %>%
-  summarise(
-    mssd = {
-      x <- Value
-      x <- x[!is.na(x)]                # drop missing
-      if (length(x) >= 2) {
-        mean(diff(x)^2)
-      } else {
-        NA_real_
-      }
-    },
-    n_timepoints = sum(!is.na(Value)),
-    .groups = "drop"
-  )
