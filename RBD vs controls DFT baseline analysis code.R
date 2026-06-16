@@ -4,8 +4,8 @@ library(ggplot2)
 library(readr)
 library(readxl)
 library(moments)
-library(broom) # to tidy
-library(ResourceSelection) # for Hosmer-Lemeshow test 
+library(broom) 
+library(ResourceSelection)  
 
 RBD_control_DFT_data <- read_csv("DFT/RBD_control_DFT_data.csv")
 table(RBD_control_DFT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
@@ -35,8 +35,6 @@ RBD_control_DFT_data %>%
   filter(Code == "Control") %>%
   count(PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 
-## has a _baseline column
-
 #get rid of IDs with missing data
 RBD_control_baseline_data <- RBD_control_DFT_data %>%
   filter(!is.na(onefingertaptest_worst_ks_baseline) & !is.na(onefingertaptest_worst_is_baseline) & !is.na(onefingertaptest_worst_at_baseline))
@@ -57,8 +55,6 @@ RBD_control_baseline_data <- RBD_control_baseline_data %>%
   anti_join(RBD_and_PD_bl_data, by = c("PID2", "TokenFinal"))
 
 write.csv(RBD_control_baseline_data, "DFT/Pilot study dft/Baseline/RBD vs controls/RBD_control_baseline_data.csv", row.names = FALSE)
-
-
 
 
 #### baseline analysis RBD vs controls ####
@@ -83,8 +79,7 @@ RBD_control_baseline_data2 <- RBD_control_baseline_data %>%
   filter(!is.nan(onefingertaptest_worst_is_baseline))
 
 
-#have outliers in control group but don't want to 'stack the deck' to get sig differences
-#instead of excluding set the value at the cohort max/min
+#have outliers in control group
 # Winsorization function to replace outliers with the max/min within bounds
 winsorize_with_max_min <- function(x) {
   qnt <- quantile(x, probs = c(0.25, 0.75), na.rm = TRUE)
@@ -350,155 +345,3 @@ hoslem.test(x = RBD_control_baseline_data2$Code_numeric,
 hoslem.test(x = RBD_control_baseline_data2$Code_numeric,
             y = fitted(final_model_AT),
             g = 10)
-
-
-
-##### Create Forest plots ##### 
-#IS
-# Extract ORs and 95% CIs
-OR_data <- as.data.frame(exp(cbind(OR = coef(final_model_IS), confint(final_model_IS))))
-OR_data$Variable <- rownames(OR_data)
-
-# Replace raw variable names with  labels
-OR_data$Variable <- recode(OR_data$Variable,
-                           "(Intercept)" = "Intercept",
-                           "onefingertaptest_worst_is_baseline_z" = "IS (z-score)",
-                           "genderMale" = "Male (vs Female)",
-                           "age_session_baseline" = "Age",
-                           "age_baseline_sq" = "Age²"
-)
-
-
-# Exclude Intercept for clarity
-ggplot(OR_data[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2,  # <- increase size for boldness
-                color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +  # <- optional: make dashed line bolder
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-#KS
-OR_data_KS <- as.data.frame(exp(cbind(OR = coef(final_model_KS), confint(final_model_KS))))
-OR_data_KS$Variable <- rownames(OR_data_KS)
-
-# Replace raw variable names with  labels
-OR_data_KS$Variable <- recode(OR_data_KS$Variable,
-                              "(Intercept)" = "Intercept",
-                              "onefingertaptest_worst_ks_rev_z" = "KS (z-score)",
-                              "genderMale" = "Male (vs Female)",
-                              "age_session_baseline" = "Age",
-                              "age_baseline_sq" = "Age²"
-)
-
-
-
-ggplot(OR_data_KS[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2,
-                color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +  
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-
-#AT
-OR_data_AT <- as.data.frame(exp(cbind(OR = coef(final_model_AT), confint(final_model_AT))))
-OR_data_AT$Variable <- rownames(OR_data_AT)
-
-# Replace raw variable names with  labels
-OR_data_AT$Variable <- recode(OR_data_AT$Variable,
-                              "(Intercept)" = "Intercept",
-                              "onefingertaptest_worst_at_baseline_z" = "AT (z-score)",
-                              "genderMale" = "Male (vs Female)",
-                              "age_session_baseline" = "Age",
-                              "age_baseline_sq" = "Age²"
-)
-
-ggplot(OR_data_AT[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2,
-                color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +  
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-
-# collate into one forest plot
-ks_data <- tidy(final_model_KS, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE) %>%
-  filter(term == "onefingertaptest_worst_ks_rev_z") %>%
-  mutate(Variable = "Kinesia Score (KS)")
-
-is_data <- tidy(final_model_IS, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE) %>%
-  filter(term == "onefingertaptest_worst_is_baseline_z") %>%
-  mutate(Variable = "Incoordination Score (IS)")
-
-at_data <- tidy(final_model_AT, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE) %>%
-  filter(term == "onefingertaptest_worst_at_baseline_z") %>%
-  mutate(Variable = "Akinesia Time (AT)")
-
-all_motor <- bind_rows(ks_data, is_data, at_data) %>%
-  mutate(p_label = ifelse(p.value < 0.001, "<0.001", sprintf("%.3f", p.value)))
-
-
-ggplot(all_motor, aes(x = estimate, y = Variable)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high),
-                 height = 0.2, size = 1.2, color = "#2c7fb8") +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "grey50", size = 1) +
-  geom_text(aes(label = paste("p =", p_label), x = conf.high * 1.15), 
-            hjust = 0, size = 4.2, color = "black") +
-  scale_x_log10(limits = c(0.50, 4)) +  # ← sets fixed axis range
-  labs(title = "Baseline Associations of DFT Scores with PSG-iRBD vs. Controls",
-       subtitle = "Odds Ratios from Logistic Regression Adjusted for Age and Gender",
-       x = "Odds Ratio (log scale)", y = "") +
-  theme_minimal(base_size = 14)
-
-
-
-#extract data for overall forest plot
-extract_row <- function(model, term, variable, test, comparison,
-                        conf_level = 0.95) {
-  tidy(model, conf.int = TRUE, conf.level = conf_level, exponentiate = TRUE) %>%
-    filter(term == !!term) %>%
-    mutate(
-      Variable   = variable,
-      Test       = test,
-      Comparison = comparison
-    ) %>%
-    select(Test, Comparison, Variable, estimate, conf.low, conf.high, p.value)
-}
-
-
-DFT_df_RBD <- bind_rows(
-  extract_row(final_model_KS,
-              "onefingertaptest_worst_ks_rev_z",
-              "Kinesia Score",
-              test = "DFT", comparison = "PSG-iRBD vs control"),
-  extract_row(final_model_IS,
-              "onefingertaptest_worst_is_baseline_z",
-              "Incoordination Score",
-              test = "DFT", comparison = "PSG-iRBD vs control"),
-  extract_row(final_model_AT,
-              "onefingertaptest_worst_at_baseline_z",
-              "Akinesia Time",
-              test = "DFT", comparison = "PSG-iRBD vs control")
-)
-
-saveRDS(DFT_df_RBD, "DFT/Pilot study dft/Baseline/RBD vs controls/forest_rows_DFT_RBD.rds")
-
