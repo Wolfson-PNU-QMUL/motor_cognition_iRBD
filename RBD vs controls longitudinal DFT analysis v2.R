@@ -68,7 +68,7 @@ RBD_control_DFT_data %>%
 RBD_control_DFT_data <- RBD_control_DFT_data %>%
   filter(gender != "Transgender/Nonbinary/Other")
 
-#need to reformat df
+#need to reformat df so can run lme- year in separate rows rather than column
 RBD_control_DFT_data2 <- RBD_control_DFT_data %>%
   pivot_longer(
     cols = matches("onefingertaptest_worst_(at|is|ks)_(baseline|lastfollowup)$"),
@@ -139,6 +139,8 @@ RBD_control_DFT_data2_filtered <- RBD_control_DFT_data2_filtered %>%
   filter(!is.nan(onefingertaptest_worst_is))
 
 
+#have outliers in control group but don't want to 'stack the deck' to get sig differences
+#instead of excluding set the value at the cohort max/min
 # Winsorization function to replace outliers with the max/min within bounds
 winsorize_with_max_min <- function(x) {
   qnt <- quantile(x, probs = c(0.25, 0.75), na.rm = TRUE)
@@ -286,6 +288,8 @@ t.test(onefingertaptest_worst_ks ~ Code, data = subset(df_filtered, Timepoint ==
 t.test(onefingertaptest_worst_ks ~ Code, data = subset(df_filtered, Timepoint == "lastfollowup"))
 
 
+
+
 ##############   Linear Mixed Effect Regression    ##############
 #assign cases and controls to data sheet
 df_filtered2 <- df_filtered %>%
@@ -302,7 +306,7 @@ df_filtered2 <- df_filtered2 %>%
     onefingertaptest_date_lastfollowup = as.Date(onefingertaptest_date_lastfollowup, format = "%d/%m/%Y")
   )
 
-#to avoid collinearity produce elapsed_time
+#to avoid collinearity (similar data) produce elapsed_time- true time difference for each participant
 df_filtered2 <- df_filtered2 %>%
   group_by(PID2) %>%
   mutate(
@@ -337,6 +341,7 @@ df_filtered2 %>%
 
 
 ## need to add random slopes- to allow individual variation in slopes
+# meaning participants can change at different rates over time! 
 
 # Incoordination score
 IS_model <- lmer(
@@ -493,6 +498,18 @@ ggplot(df_filtered2, aes(x = Timepoint, y = onefingertaptest_worst_at, color = C
 
 #### check linearity of age
 #IS
+ggplot(df_filtered2, aes(x = age_session_baseline, y = onefingertaptest_worst_is, color = factor(Code))) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "loess", se = TRUE) +  # loess to explore shape
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), linetype = "dashed", se = FALSE) + # quadratic fit
+  theme_minimal() +
+  labs(
+    x = "Baseline Age",
+    y = "Worst IS Score",
+    color = "Code"
+  )
+
+
 df_filtered2$age_squared <- df_filtered2$age_session_baseline^2
 
 #scale variables
@@ -527,6 +544,18 @@ anova(IS_model, IS_model2)
 
 
 #KS
+ggplot(df_filtered2, aes(x = age_session_baseline, y = onefingertaptest_worst_ks, color = factor(Code))) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "loess", se = TRUE) +  # loess to explore shape
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), linetype = "dashed", se = FALSE) + # quadratic fit
+  theme_minimal() +
+  labs(
+    x = "Baseline Age",
+    y = "Worst KS Score",
+    color = "Code"
+  )
+
+
 KS_model2 <- lmer(
   onefingertaptest_worst_ks_rev ~ elapsed_time_z * Code + age_baseline_z + age_squared_z + gender + (1 | PID2),
   data = df_filtered2
@@ -550,6 +579,17 @@ anova(KS_model, KS_model2)
 
 
 #AT
+ggplot(df_filtered2, aes(x = age_session_baseline, y = onefingertaptest_worst_at, color = factor(Code))) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "loess", se = TRUE) +  # loess to explore shape
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), linetype = "dashed", se = FALSE) + # quadratic fit
+  theme_minimal() +
+  labs(
+    x = "Baseline Age",
+    y = "Worst AT Score",
+    color = "Code"
+  )
+
 AT_model2 <- lmer(
   onefingertaptest_worst_at ~ elapsed_time_z * Code + age_baseline_z + age_squared_z + gender + (1 | PID2),
   data = df_filtered2
