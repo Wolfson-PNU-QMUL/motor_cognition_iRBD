@@ -70,7 +70,7 @@ sRBD_control_DFT_data %>%
 sRBD_control_DFT_data <- sRBD_control_DFT_data %>%
   filter(gender != "Transgender/Nonbinary/Other")
 
-#need to reformat df so can run lme- year in separate rows rather than column
+#need to reformat df so can run lme
 sRBD_control_DFT_data2 <- sRBD_control_DFT_data %>%
   pivot_longer(
     cols = matches("onefingertaptest_worst_(at|is|ks)_(baseline|lastfollowup)$"),
@@ -247,7 +247,6 @@ ggplot(sRBD_control_DFT_data2_filtered, aes(x = onefingertaptest_worst_ks, group
 df_filtered<- sRBD_control_DFT_data2_filtered
 
 
-
 #### demographics ####
 table(df_filtered$Code, df_filtered$Timepoint)
 
@@ -292,7 +291,6 @@ t.test(onefingertaptest_worst_ks ~ Code, data = subset(df_filtered, Timepoint ==
 
 
 
-
 ##############   Linear Mixed Effect Regression    ##############
 #assign cases and controls to data sheet
 df_filtered2 <- df_filtered %>%
@@ -310,7 +308,7 @@ df_filtered2 <- df_filtered2 %>%
   )
 
 
-#to avoid collinearity (similar data) produce elapsed_time- true time difference for each participant
+#to avoid collinearity produce elapsed_time
 df_filtered2 <- df_filtered2 %>%
   group_by(PID2) %>%
   mutate(
@@ -503,8 +501,7 @@ print(AT)
 # Function to extract fixed effects (xtract the fixed-effect coefficients for each bootstrap sample)
 fixef_fun <- function(fit) fixef(fit)
 
-# Bootstrap 1000 times (resamples our dataset 1000 times with replacement, 
-#refits the LME, and stores the fixed-effect estimates)
+# Bootstrap 1000 times (resamples our dataset 1000 times with replacement, refits the LME, and stores the fixed-effect estimates)
 boot_results <- bootMer(AT_model, fixef_fun, nsim = 1000)
 
 # 95% bootstrap CI
@@ -627,7 +624,6 @@ ggplot(df_filtered2, aes(x = age_session_baseline, y = onefingertaptest_worst_at
     y = "Worst AT Score",
     color = "Code"
   )
-
 
 
 AT_model2 <- lmer(
