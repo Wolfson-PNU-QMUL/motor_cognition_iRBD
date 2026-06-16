@@ -81,7 +81,7 @@ matched_RBD_control_DFT_data2 <- read_csv("C:/Users/hwx036/OneDrive - Queen Mary
 
 
 ######## Exploratory data analysis #########
-# List of your BRAIN test columns
+# List of test columns
 cols_dft <- c(
   "onefingertaptest_worst_is_5", "onefingertaptest_worst_is_7",
   "onefingertaptest_worst_ks_5", "onefingertaptest_worst_ks_7", 
