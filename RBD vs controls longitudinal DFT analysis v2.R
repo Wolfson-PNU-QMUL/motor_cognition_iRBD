@@ -286,8 +286,6 @@ t.test(onefingertaptest_worst_ks ~ Code, data = subset(df_filtered, Timepoint ==
 t.test(onefingertaptest_worst_ks ~ Code, data = subset(df_filtered, Timepoint == "lastfollowup"))
 
 
-
-
 ##############   Linear Mixed Effect Regression    ##############
 #assign cases and controls to data sheet
 df_filtered2 <- df_filtered %>%
