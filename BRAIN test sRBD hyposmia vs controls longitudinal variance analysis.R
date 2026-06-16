@@ -85,7 +85,7 @@ all(matched_sRBD_hyp_control_BT_data2$braintest_worst_ks_8 ==
       matched_sRBD_hyp_control_BT_data2$braintest_worst_ks_adj_8, 
     na.rm = TRUE)
 
-# List of your BRAIN test columns
+# List of BRAIN test columns
 cols_bt <- c(
   "braintest_worst_at_adj_4", "braintest_worst_at_adj_5", "braintest_worst_at_adj_7", "braintest_worst_at_adj_8",
   "braintest_worst_is_adj_4", "braintest_worst_is_adj_5", "braintest_worst_is_adj_7", "braintest_worst_is_adj_8",
@@ -115,13 +115,13 @@ matched_sRBD_hyp_control_BT_data2 <- matched_sRBD_hyp_control_BT_data2 %>%
 # Pivot to long format but keep all non-brain test columns
 sRBD_hyp_BT_long <- matched_sRBD_hyp_control_BT_data2 %>%
   pivot_longer(
-    cols = all_of(cols_bt),                # only pivot brain test columns
+    cols = all_of(cols_bt),                
     names_to = c("Measure", "Session"),
     names_pattern = "(.*)_(\\d+)$",
     values_to = "Value"
   ) %>%
   mutate(Session = as.numeric(Session)) %>%
-  group_by(PID2, Measure) %>%             # define per-participant & per-measure
+  group_by(PID2, Measure) %>%            
   arrange(PID2, Measure, Session) %>%
   mutate(RelativeVisit = row_number()) %>% # baseline = 1, next = 2, etc.
   ungroup()
@@ -135,14 +135,14 @@ sRBD_hyp_BT_long %>%
   count(Measure, n)
 
 sRBD_hyp_BT_long %>%
-  filter(!is.na(Value)) %>%                       # only observed values
+  filter(!is.na(Value)) %>%                       
   group_by(Measure, PID2) %>%
-  summarise(n_obs = n(), .groups = "drop") %>%    # number of observed timepoints
-  filter(n_obs == 4) %>%                          # complete 4
+  summarise(n_obs = n(), .groups = "drop") %>%    
+  filter(n_obs == 4) %>%                        
   count(Measure, name = "n_IDs_complete_4tp")
 
 
-#Variability-eligible dataset (maximising sample)
+#Variability-eligible dataset
 sRBD_hyp_BT_long_all <- sRBD_hyp_BT_long %>%
   filter(!is.na(Value)) %>%
   group_by(PID2, Code, Measure) %>%
@@ -201,7 +201,7 @@ sRBD_hyp_BT_flagged <- sRBD_hyp_BT_long_all %>%
   ) %>%
   ungroup()
 
-# Flag outliers and create summary table in one go
+# Flag outliers and create summary table
 outlier_counts <- sRBD_hyp_BT_flagged %>%
   group_by(Code, Measure, RelativeVisit) %>%
   mutate(
@@ -382,9 +382,6 @@ for(m in unique(sRBD_hyp_BT_long_qc$Measure)) {
 }
 
 
-
-
-
 ######### Variance Analysis ######### 
 #Step 1a — Compute mean, SD, and sample size per group × year × measure
 variance_summary <- sRBD_hyp_BT_long_qc %>%
@@ -482,7 +479,7 @@ for (m in measures) {
   print(p)
 }
 
-# Save the combined mean + SD + bootstrap CI
+# Save combined mean + SD + bootstrap CI
 write.csv(plot_data, "BRAIN test/sRBD hyp vs controls/BRAIN_mean_SD_bootstrap_sRBD_hyp.csv", row.names = FALSE)
 
 
@@ -498,7 +495,7 @@ calc_subject_variability <- function(long_df,
   stopifnot(all(c("Measure", id_col, group_col, time_col, value_col) %in% names(long_df)))
   stopifnot(all(measures %in% unique(long_df$Measure)))
   
-  # Helper: compute SD, Range, MSSD for one subject (already ordered by time)
+  # compute SD, Range, MSSD for one subject 
   subject_metrics <- function(x) {
     x <- x[!is.na(x)]
     if (length(x) == 0) {
@@ -510,7 +507,6 @@ calc_subject_variability <- function(long_df,
     c(n_timepoints = length(x), sd_subject = sdv, range_subject = rgv, mssd = msv)
   }
   
-  # 1) One row per participant × measure with SD, Range, MSSD
   subj_tbl <- long_df %>%
     dplyr::filter(.data$Measure %in% measures) %>%
     dplyr::arrange(.data[[id_col]], .data$Measure, .data[[time_col]]) %>%
@@ -519,7 +515,6 @@ calc_subject_variability <- function(long_df,
                      .groups = "drop") %>%
     tidyr::unnest_wider(metrics)
   
-  # 2) Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
   metrics_to_test <- c("sd_subject", "range_subject", "mssd")
   wilcox_rows <- list()
   
@@ -570,7 +565,7 @@ brain_measures <- c("braintest_worst_is_adj", "braintest_worst_at_adj", "brainte
 res_var <- calc_subject_variability(
   long_df   = sRBD_hyp_BT_long_qc,
   measures  = brain_measures,
-  value_col = "Value_clean_log",   # IMPORTANT: uses QC'd values + log AT
+  value_col = "Value_clean_log",  
   exact_two_sided = FALSE
 )
 
@@ -716,7 +711,6 @@ anova(lme_hom_KS, lme_varident_KS)
 summary(lme_varident_KS)
 
 
-
 ###### demographics ###### 
 sRBD_hyp_BT_long_all %>%
   distinct(PID2, Code) %>%
@@ -777,52 +771,6 @@ summary_means <- sRBD_hyp_BT_long_qc %>%
 
 print(as.data.frame(summary_means))
 
-
-
-#compute MSSD for heatmap
-mssd_person <- sRBD_hyp_BT_long_3tp %>%
-  group_by(PID2, Code, Measure) %>%
-  arrange(RelativeVisit, .by_group = TRUE) %>%
-  summarise(
-    mssd = mean(diff(Value)^2, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-#Group-level MSSD per Measure
-mssd_group <- mssd_person %>%
-  group_by(Measure, Code) %>%
-  summarise(
-    mssd_mean = mean(mssd, na.rm = TRUE),
-    n = n(),
-    .groups = "drop"
-  )
-
-
-mssd_ctrl <- mssd_group %>%
-  filter(Code == "Control") %>%
-  select(Measure, mssd_ctrl = mssd_mean)
-
-mssd_case <- mssd_group %>%
-  filter(Code == "sRBD_hyposmia") %>%
-  select(Measure, mssd_case = mssd_mean)
-
-mssd_delta <- mssd_case %>%
-  left_join(mssd_ctrl, by = "Measure") %>%
-  mutate(
-    delta_mssd = mssd_case - mssd_ctrl,
-    Comparison = "pRBD with hyposmia vs Control"
-  ) %>%
-  select(Comparison, Measure, delta_mssd)
-
-print(mssd_delta, n = nrow(mssd_delta))
-
-#save
-dir.create("MSSD_tables", showWarnings = FALSE)
-
-write.csv(
-  mssd_delta,
-  "MSSD_tables/mssd_sRBD_hyp_vs_control_BRAIN.csv",
-  row.names = FALSE)
 
 
 
