@@ -74,7 +74,7 @@ sRBD_hyp_control_BT_data <- sRBD_hyp_control_BT_data %>%
   filter(gender != "Transgender/Nonbinary/Other")
 
 
-#need to reformat df so can run lme- year in separate rows rather than column
+#need to reformat df
 sRBD_hyp_control_BT_data <- sRBD_hyp_control_BT_data %>%
   pivot_longer(
     cols = c(
@@ -281,8 +281,6 @@ ggplot(df_filtered, aes(x = braintest_worst_ks, group = interaction(Code, Timepo
   labs(x = "Braintest Worst KS Adjusted", y = "Density", title = "Baseline vs Follow-up by Group")
 
 
-
-
 #### demographics ####
 table(df_filtered$Code, df_filtered$Timepoint)
 
@@ -324,8 +322,6 @@ t.test(braintest_worst_at_adj ~ Code, data = subset(df_filtered, Timepoint == "F
 
 t.test(braintest_worst_ks ~ Code, data = subset(df_filtered, Timepoint == "Baseline"))
 t.test(braintest_worst_ks ~ Code, data = subset(df_filtered, Timepoint == "Follow-up"))
-
-
 
 
 ##############   Linear Mixed Effect Regression    ##############
@@ -415,7 +411,6 @@ boot_results <- bootMer(IS_model, fixef_fun, nsim = 1000)
 confint(boot_results, type = "perc")
 
 
-
 # Helper for median + IQR
 median_iqr <- function(x) {
   data.frame(
@@ -424,36 +419,6 @@ median_iqr <- function(x) {
     ymax = quantile(x, 0.75, na.rm = TRUE)
   )
 }
-
-# Plot IS across years for cases vs controls (median + IQR)
-ggplot(df_filtered2, aes(x = Timepoint, y = braintest_worst_is_adj, color = Code, group = Code)) +
-  stat_summary(fun = median, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = median, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = median_iqr, geom = "errorbar", width = 0.2, linewidth = 0.8) +
-  labs(
-    title = "Incoordination Score at Baseline and Follow-up",
-    subtitle = "sRBD + hyposmia vs. Controls",
-    x = "Timepoint",
-    y = "Median Incoordination Score (with IQR)",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"),
-                     labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14),
-    plot.subtitle = element_text(size = 12),         # keep subtitle readable
-    axis.text = element_text(size = 11),            # axis tick labels
-    axis.title.x = element_text(size = 12, face = "bold"),
-    axis.title.y = element_text(size = 12, face = "bold"),
-    legend.title = element_text(size = 12, face = "bold"),
-    legend.text = element_text(size = 11)
-  )
-
 
 
 # Kinesia score
@@ -477,40 +442,15 @@ KS <- tidy(KS_model, effects = "fixed", conf.int = TRUE) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3)))
 print(KS)
 
-
 #bootstrapping due to small sample size
 # Function to extract fixed effects (xtract the fixed-effect coefficients for each bootstrap sample)
 fixef_fun <- function(fit) fixef(fit)
 
-# Bootstrap 1000 times (resamples our dataset 1000 times with replacement, 
-#refits the LME, and stores the fixed-effect estimates)
+# Bootstrap 1000 times (resamples our dataset 1000 times with replacement, refits the LME, and stores the fixed-effect estimates)
 boot_results <- bootMer(KS_model, fixef_fun, nsim = 1000)
 
 # 95% bootstrap CI
 confint(boot_results, type = "perc")
-
-
-# Plot KS across years for cases vs controls
-ggplot(df_filtered2, aes(x = Timepoint, y = braintest_worst_ks, color = Code, group = Code)) +
-  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) +  # Changed here
-  labs(
-    title = "Kinesia Score at Baseline and Follow-up",
-    subtitle = "sRBD + hyposmia vs. Controls",
-    x = "Timepoint",
-    y = "Mean Kinesia Score",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"), labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14)
-  )
 
 
 # Akinesia Time
@@ -536,37 +476,14 @@ print(AT)
 
 
 #bootstrapping due to small sample size
-# Function to extract fixed effects (xtract the fixed-effect coefficients for each bootstrap sample)
+# Function to extract fixed effects
 fixef_fun <- function(fit) fixef(fit)
 
-# Bootstrap 1000 times (resamples our dataset 1000 times with replacement, 
-#refits the LME, and stores the fixed-effect estimates)
+# Bootstrap 1000 times
 boot_results <- bootMer(AT_model, fixef_fun, nsim = 1000)
 
 # 95% bootstrap CI
 confint(boot_results, type = "perc")
-
-# Plot AT across years for cases vs controls
-ggplot(df_filtered2, aes(x = Timepoint, y = braintest_worst_at_adj, color = Code, group = Code)) +
-  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
-  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
-  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) + 
-  labs(
-    title = "Akinesia Time at Baseline and Follow-up",
-    subtitle = "sRBD + hyposmia vs. Controls",
-    x = "Timepoint",
-    y = "Mean Akinesia Time",
-    color = "Group"
-  ) +
-  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"), labels = c("Controls", "Cases")) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    axis.title = element_text(face = "bold"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
-    panel.grid.major.x = element_blank(),
-    plot.title = element_text(face = "bold", size = 14)
-  )
 
 
 #### check linearity of age
@@ -683,19 +600,5 @@ AT2 <- tidy(AT_model2, effects = "fixed", conf.int = TRUE) %>%
 print(AT2)
 anova(AT_model, AT_model2)
 
-
-## calculate mean follow up time
-df_filtered2 %>%
-  group_by(PID2) %>%
-  summarise(
-    followup_years = max(elapsed_time, na.rm = TRUE),  # time from baseline to follow-up
-    .groups = "drop"
-  ) %>%
-  summarise(
-    mean_followup = mean(followup_years, na.rm = TRUE),
-    median_followup = median(followup_years, na.rm = TRUE),
-    min_followup = min(followup_years, na.rm = TRUE),
-    max_followup = max(followup_years, na.rm = TRUE)
-  )
 
 
