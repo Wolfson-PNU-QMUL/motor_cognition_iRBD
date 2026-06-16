@@ -13,7 +13,7 @@ library(ggdist)
 library(nlme)
 library(lme4)
 library(lmerTest)
-library(nlme) # for heteroscedastic LMEs
+library(nlme)
 library(tidybayes)
 library(moments)
 
@@ -98,7 +98,7 @@ cols_to_convert <- c( "onefingertaptest_worst_is_5", "onefingertaptest_worst_is_
 matched_RBD_control_DFT_data2[cols_to_convert] <- lapply(matched_RBD_control_DFT_data2[cols_to_convert], as.numeric)
 
 
-#remove participants with ALL brain test data missing 
+#remove participants with ALL test data missing 
 matched_RBD_control_DFT_data2 <- matched_RBD_control_DFT_data2 %>%
   filter(
     rowSums(is.na(select(., starts_with("onefingertaptest_worst")))) <
@@ -457,7 +457,7 @@ calc_subject_variability <- function(long_df,
   stopifnot(all(c("Measure", id_col, group_col, time_col, value_col) %in% names(long_df)))
   stopifnot(all(measures %in% unique(long_df$Measure)))
   
-  # Helper: compute SD, Range, MSSD for one subject (already ordered by time)
+  # compute SD, Range, MSSD for one subject (already ordered by time)
   subject_metrics <- function(x) {
     x <- x[!is.na(x)]
     if (length(x) == 0) {
@@ -469,7 +469,7 @@ calc_subject_variability <- function(long_df,
     c(n_timepoints = length(x), sd_subject = sdv, range_subject = rgv, mssd = msv)
   }
   
-  # 1) One row per participant × measure with SD, Range, MSSD
+  # One row per participant × measure with SD, Range, MSSD
   subj_tbl <- long_df %>%
     dplyr::filter(.data$Measure %in% measures) %>%
     dplyr::arrange(.data[[id_col]], .data$Measure, .data[[time_col]]) %>%
@@ -478,7 +478,7 @@ calc_subject_variability <- function(long_df,
                      .groups = "drop") %>%
     tidyr::unnest_wider(metrics)
   
-  # 2) Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
+  #Wilcoxon tests for SD, Range, MSSD per measure
   metrics_to_test <- c("sd_subject", "range_subject", "mssd")
   wilcox_rows <- list()
   
@@ -591,7 +591,6 @@ wilcox_table <- stat_results_all %>%
 wilcox_table
 
 
-
 #Step 3:	Model time-varying variance (heteroscedastic mixed model)
 # Filter IS scores
 IS_data <- RBD_DFT_long_2tp %>% 
@@ -646,8 +645,6 @@ anova(lme_hom_AT, lme_varident_AT)
 summary(lme_hom_AT)
 
 
-
-
 # Filter KS scores
 KS_data <- RBD_DFT_long_2tp %>% 
   filter(Measure == "onefingertaptest_worst_ks")
@@ -673,9 +670,6 @@ lme_varident_KS <- update(
 anova(lme_hom_KS, lme_varident_KS)
 
 summary(lme_hom_KS)
-
-
-
 
 
 ###### demographics ###### 
@@ -737,57 +731,6 @@ summary_means <- RBD_DFT_long_2tp %>%
 
 
 print(summary_means, n = nrow(summary_means))
-
-
-
-
-#compute MSSD for heatmap
-mssd_person <- RBD_DFT_long_2tp %>%
-  group_by(PID2, Code, Measure) %>%
-  arrange(RelativeVisit, .by_group = TRUE) %>%
-  summarise(
-    mssd = mean(diff(Value)^2, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-#Group-level MSSD per Measure
-mssd_group <- mssd_person %>%
-  group_by(Measure, Code) %>%
-  summarise(
-    mssd_mean = mean(mssd, na.rm = TRUE),
-    n = n(),
-    .groups = "drop"
-  )
-
-mssd_ctrl <- mssd_group %>%
-  filter(Code == "Control") %>%
-  select(Measure, mssd_ctrl = mssd_mean)
-
-mssd_case <- mssd_group %>%
-  filter(Code == "iRBD") %>%
-  select(Measure, mssd_case = mssd_mean)
-
-mssd_delta <- mssd_case %>%
-  left_join(mssd_ctrl, by = "Measure") %>%
-  mutate(
-    delta_mssd = mssd_case - mssd_ctrl,
-    Comparison = "PSG-iRBD vs Control"
-  ) %>%
-  select(Comparison, Measure, delta_mssd)
-
-print(mssd_delta, n = nrow(mssd_delta))
-
-#save
-dir.create("MSSD_tables", showWarnings = FALSE)
-
-write.csv(
-  mssd_delta,
-  "MSSD_tables/mssd_PSGiRBD_vs_control_DFT.csv",
-  row.names = FALSE
-)
-
-
-
 
 
 
