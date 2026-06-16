@@ -265,26 +265,21 @@ apply_bt_qc_and_transform <- function(sRBD_hyp_BT_long_all,
                                       log_at      = TRUE) {
   sRBD_hyp_BT_long_all %>%
     mutate(
-      # ensure numeric (safe-ish; if you have messy strings use parse_number here)
       Value_num = suppressWarnings(as.numeric(.data[[value_col]])),
       
       qc_flag = case_when(
-        # KS plausibility rule (from your LR code)
         .data[[measure_col]] == "braintest_worst_ks" &
           (Value_num < 15 | Value_num > 110) ~ "invalid_KS",
         
-        # AT must be positive if you ever log-transform
         .data[[measure_col]] == "braintest_worst_at_adj" &
           (is.na(Value_num) | Value_num <= 0) ~ "invalid_AT_nonpositive",
         
-        # If you believe there is a true ceiling (timeout), cap it (flag it either way)
         .data[[measure_col]] == "braintest_worst_at_adj" &
           (Value_num > at_ceiling) ~ "AT_capped_ceiling",
         
         TRUE ~ "ok"
       ),
       
-      # Cleaned value on the ORIGINAL scale
       Value_clean = case_when(
         qc_flag == "invalid_KS" ~ NA_real_,
         qc_flag == "invalid_AT_nonpositive" ~ NA_real_,
@@ -292,7 +287,6 @@ apply_bt_qc_and_transform <- function(sRBD_hyp_BT_long_all,
         TRUE ~ Value_num
       ),
       
-      # Log transform (AT only, after QC)
       Value_clean_log = case_when(
         log_at & .data[[measure_col]] == "braintest_worst_at_adj" &
           !is.na(Value_clean) ~ log(Value_clean),
