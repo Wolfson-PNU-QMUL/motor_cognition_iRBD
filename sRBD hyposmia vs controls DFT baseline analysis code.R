@@ -4,8 +4,8 @@ library(ggplot2)
 library(readr)
 library(readxl)
 library(moments)
-library(broom) # to tidy
-library(ResourceSelection) # for Hosmer-Lemeshow test 
+library(broom) 
+library(ResourceSelection) 
 
 
 sRBD_hyp_control_DFT_data <- read_csv("DFT/sRBD_hyp_control_DFT_data.csv")
@@ -58,7 +58,6 @@ sRBD_hyp_control_DFT_data <- sRBD_hyp_control_DFT_data %>%
 table(sRBD_hyp_control_DFT_data$hx_neuro_parkinsons, sRBD_hyp_control_DFT_data$Code)
 
 write.csv(sRBD_hyp_control_DFT_data, "DFT/Pilot study dft/Baseline/sRBD_hyposmia vs controls/sRBD_hyp_control_baseline_data.csv", row.names = FALSE)
-
 
 
 #### baseline analysis sRBD vs controls ####
@@ -125,13 +124,11 @@ ggplot(sRBD_hyp_control_DFT_data2, aes(x=age_session_baseline, group=Code, fill=
   geom_density(alpha=.5)+ scale_fill_manual(values=c("#009E73","#E69F00")) + theme_minimal() +
   xlim(45, 90)
 
-
 DFT_baseline_male <- sRBD_hyp_control_DFT_data2[sRBD_hyp_control_DFT_data2$gender == "Male", ]
 
 ggplot(DFT_baseline_male, aes(x=age_session_baseline, group=Code, fill=Code)) +
   geom_density(alpha=.5)+ scale_fill_manual(values=c("#009E73","#E69F00")) + theme_minimal() +
   xlim(45,90)
-
 
 DFT_baseline_female <- sRBD_hyp_control_DFT_data2[sRBD_hyp_control_DFT_data2$gender == "Female", ]
 
@@ -150,7 +147,6 @@ ggplot(sRBD_hyp_control_DFT_data2, aes(x=onefingertaptest_worst_at_baseline, gro
 ggplot(sRBD_hyp_control_DFT_data2, aes(x=onefingertaptest_worst_ks_rev, group=Code, fill=Code)) +
   geom_density(alpha=.5)+ scale_fill_manual(values=c("#009E73","#E69F00")) + theme_minimal() +
   xlim(-165, 30)
-
 
 
 #### Demographics ####
@@ -188,15 +184,12 @@ t.test(onefingertaptest_worst_ks_baseline ~ Code, data = sRBD_hyp_control_DFT_da
 table(sRBD_hyp_control_DFT_data2$Code, sRBD_hyp_control_DFT_data2$hx_neuro_parkinsons)
 
 
-
-
 #### Regression model ####
 # convert code column to 0 (control) and 1 (iRBD) for glm
 sRBD_hyp_control_DFT_data2 <- sRBD_hyp_control_DFT_data2 %>%
   mutate(Code = ifelse(Code == "sRBD_hyposmia", 1, 0))
 sRBD_hyp_control_DFT_data2$Code <- as.factor(sRBD_hyp_control_DFT_data2$Code)
 table(sRBD_hyp_control_DFT_data2$Code)
-
 
 # Incoordination score
 ggplot(sRBD_hyp_control_DFT_data2, aes(x=Code, y=onefingertaptest_worst_is_baseline)) + 
@@ -208,7 +201,6 @@ model_IS <- glm( Code ~ onefingertaptest_worst_is_baseline_z  + gender + age_ses
 summary(model_IS)
 exp(cbind(coef(model_IS), confint(model_IS,level = 0.95)))
 
-
 # Kinesia score
 ggplot(sRBD_hyp_control_DFT_data2, aes(x=Code, y=onefingertaptest_worst_ks_rev)) + 
   geom_boxplot()
@@ -219,7 +211,6 @@ model_KS <- glm( Code ~ onefingertaptest_worst_ks_rev_z  + gender + age_session_
 summary(model_KS)
 exp(cbind(coef(model_KS), confint(model_KS,level = 0.95)))
 
-
 #Akinesia time
 ggplot(sRBD_hyp_control_DFT_data2, aes(x=Code, y=onefingertaptest_worst_at_baseline)) + 
   geom_boxplot()
@@ -229,7 +220,6 @@ model_AT <- glm( Code ~ onefingertaptest_worst_at_baseline_z  + gender + age_ses
                  data = sRBD_hyp_control_DFT_data2,family = 'binomial')
 summary(model_AT)
 exp(cbind(coef(model_AT), confint(model_AT,level = 0.95)))
-
 
 ### check age linearity
 #IS
@@ -248,7 +238,6 @@ exp(cbind(coef(model_age_quad), confint(model_age_quad,level = 0.95)))
 AIC(model_IS, model_age_quad)
 final_model_IS <- model_IS
 
-
 #KS
 ggplot(sRBD_hyp_control_DFT_data2, aes(x = age_session_baseline, y = fitted(model_KS))) +
   geom_point(alpha = 0.3) +
@@ -263,7 +252,6 @@ exp(cbind(coef(model_age_quad_KS), confint(model_age_quad_KS,level = 0.95)))
 AIC(model_KS, model_age_quad_KS)
 final_model_KS <- model_KS
 
-
 #AT
 ggplot(sRBD_hyp_control_DFT_data2, aes(x = age_session_baseline, y = fitted(model_AT))) +
   geom_point(alpha = 0.3) +
@@ -277,7 +265,6 @@ summary(model_age_quad_AT)
 exp(cbind(coef(model_age_quad_AT), confint(model_age_quad_AT,level = 0.95)))
 AIC(model_AT, model_age_quad_AT)
 final_model_AT <- model_AT
-
 
 
 ## QQ plots ##
@@ -312,7 +299,6 @@ ggplot(df_all_residuals, aes(sample = residuals, color = factor(Code))) +
   theme_minimal()
 
 
-
 ### tidy up final models
 tidy(final_model_IS, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE)
 
@@ -339,155 +325,3 @@ hoslem.test(x = sRBD_hyp_control_DFT_data2$Code_numeric,
 hoslem.test(x = sRBD_hyp_control_DFT_data2$Code_numeric,
             y = fitted(final_model_AT),
             g = 10)
-
-
-
-
-##### Create Forest plots ##### 
-#IS
-# Extract ORs and 95% CIs
-OR_data <- as.data.frame(exp(cbind(OR = coef(final_model_IS), confint(final_model_IS))))
-OR_data$Variable <- rownames(OR_data)
-
-# Replace raw variable names with  labels
-OR_data$Variable <- recode(OR_data$Variable,
-                           "(Intercept)" = "Intercept",
-                           "onefingertaptest_worst_is_baseline_z" = "IS (z-score)",
-                           "genderMale" = "Male (vs Female)",
-                           "age_session_baseline" = "Age",
-                           "age_baseline_sq" = "Age²"
-)
-
-
-# Exclude Intercept for clarity
-ggplot(OR_data[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2,  # <- increase size for boldness
-                color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +  # <- optional: make dashed line bolder
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-#KS
-OR_data_KS <- as.data.frame(exp(cbind(OR = coef(final_model_KS), confint(final_model_KS))))
-OR_data_KS$Variable <- rownames(OR_data_KS)
-
-# Replace raw variable names with  labels
-OR_data_KS$Variable <- recode(OR_data_KS$Variable,
-                              "(Intercept)" = "Intercept",
-                              "onefingertaptest_worst_ks_rev_z" = "KS (z-score)",
-                              "genderMale" = "Male (vs Female)",
-                              "age_session_baseline" = "Age",
-                              "age_baseline_sq" = "Age²"
-)
-
-
-
-ggplot(OR_data_KS[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2,
-                color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +  
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-#AT
-OR_data_AT <- as.data.frame(exp(cbind(OR = coef(final_model_AT), confint(final_model_AT))))
-OR_data_AT$Variable <- rownames(OR_data_AT)
-
-# Replace raw variable names with  labels
-OR_data_AT$Variable <- recode(OR_data_AT$Variable,
-                              "(Intercept)" = "Intercept",
-                              "onefingertaptest_worst_at_baseline_z" = "AT (z-score)",
-                              "genderMale" = "Male (vs Female)",
-                              "age_session_baseline" = "Age",
-                              "age_baseline_sq" = "Age²"
-)
-
-ggplot(OR_data_AT[-1, ], aes(x = Variable, y = OR)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbar(aes(ymin = `2.5 %`, ymax = `97.5 %`), 
-                width = 0.2, size = 1.2,
-                color = "#2c7fb8") +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40", size = 1) +  
-  coord_flip() +
-  labs(title = "Odds Ratios from Logistic Regression",
-       y = "Odds Ratio (log scale)", x = "") +
-  scale_y_log10() +
-  theme_minimal(base_size = 14)
-
-
-
-# collate into one forest plot
-ks_data <- tidy(final_model_KS, conf.int = TRUE, conf.level = 0.95, exponentiate = TRUE) %>%
-  filter(term == "onefingertaptest_worst_ks_rev_z") %>%
-  mutate(Variable = "Kinesia Score (KS)")
-
-is_data <- tidy(final_model_IS, conf.int = TRUE, conf.level = 0.95, exponentiate = TRUE) %>%
-  filter(term == "onefingertaptest_worst_is_baseline_z") %>%
-  mutate(Variable = "Incoordination Score (IS)")
-
-at_data <- tidy(final_model_AT, conf.int = TRUE, conf.level = 0.95, exponentiate = TRUE) %>%
-  filter(term == "onefingertaptest_worst_at_baseline_z") %>%
-  mutate(Variable = "Akinesia Time (AT)")
-
-all_motor <- bind_rows(ks_data, is_data, at_data) %>%
-  mutate(p_label = ifelse(p.value < 0.001, "<0.001", sprintf("%.3f", p.value)))
-
-
-ggplot(all_motor, aes(x = estimate, y = Variable)) +
-  geom_point(size = 3, color = "#2c7fb8") +
-  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high),
-                 height = 0.2, size = 1.2, color = "#2c7fb8") +
-  geom_vline(xintercept = 1, linetype = "dashed", color = "grey50", size = 1) +
-  geom_text(aes(label = paste("p =", p_label), x = conf.high * 1.15), 
-            hjust = 0, size = 4.2, color = "black") +
-  scale_x_log10(limits = c(0.50, 4)) +  # ← sets fixed axis range
-  labs(title = "Baseline Associations of DFT Scores with pRBD with hyposmia vs. Controls",
-       subtitle = "Odds Ratios from Logistic Regression Adjusted for Age and Gender",
-       x = "Odds Ratio (log scale)", y = "") +
-  theme_minimal(base_size = 14)
-
-
-
-
-#extract data for overall forest plot
-extract_row <- function(model, term, variable, test, comparison,
-                        conf_level = 0.95) {
-  tidy(model, conf.int = TRUE, conf.level = conf_level, exponentiate = TRUE) %>%
-    filter(term == !!term) %>%
-    mutate(
-      Variable   = variable,
-      Test       = test,
-      Comparison = comparison
-    ) %>%
-    select(Test, Comparison, Variable, estimate, conf.low, conf.high, p.value)
-}
-
-
-DFT_df_sRBD_hyp <- bind_rows(
-  extract_row(final_model_KS,
-              "onefingertaptest_worst_ks_rev_z",
-              "Kinesia Score",
-              test = "DFT", comparison = "pRBD + hyposmia vs control"),
-  extract_row(final_model_IS,
-              "onefingertaptest_worst_is_baseline_z",
-              "Incoordination Score",
-              test = "DFT", comparison = "pRBD + hyposmia vs control"),
-  extract_row(final_model_AT,
-              "onefingertaptest_worst_at_baseline_z",
-              "Akinesia Time",
-              test = "DFT", comparison = "pRBD + hyposmia vs control")
-)
-
-saveRDS(DFT_df_sRBD_hyp, "DFT/Pilot study dft/Baseline/sRBD_hyposmia vs controls/forest_rows_DFT_sRBD_hyp.rds")
