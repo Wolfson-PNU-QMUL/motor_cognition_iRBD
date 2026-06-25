@@ -37,32 +37,32 @@ The repository contains separate scripts for each primary analysis conducted in 
 
 | Script | Description |
 |----------|-------------|
-| Brain test RBD vs controls baseline analysis.R | Baseline BRAIN test analyses in PSG-iRBD vs controls |
-| DFT RBD vs controls baseline analysis.R | Demographic and clinical group comparisons |
-| TMT RBD vs controls baseline analysis.R | Baseline BRAIN test analyses |
-| Brain test sRBD vs controls baseline analysis.R | Longitudinal BRAIN test analyses |
-| DFT sRBD vs controls baseline analysis.R | Baseline DFT analyses |
-| TMT sRBD vs controls baseline analysis.R | Longitudinal DFT analyses |
-| Brain test sRBD hyposmia vs controls baseline analysis.R | Baseline TMT analyses |
+| BRAIN test RBD vs controls baseline analysis.R | Baseline BRAIN test analysis in PSG-iRBD vs controls |
+| DFT RBD vs controls baseline analysis.R | Baseline DFT analysis in PSG-iRBD vs controls |
+| TMT RBD vs controls baseline analysis.R | Baseline TMT analysis in PSG-iRBD vs controls |
+| BRAIN test sRBD vs controls baseline analysis.R | Baseline BRAIN test analysis in sRBD vs controls |
+| DFT sRBD vs controls baseline analysis.R | Baseline DFT analysis in sRBD vs controls |
+| TMT sRBD vs controls baseline analysis.R | Baseline TMT analysis in sRBD vs controls |
+| BRAIN test sRBD hyposmia vs controls baseline analysis.R | Baseline TMT analyses |
 | DFT sRBD hyposmia vs controls baseline analysis.R | Longitudinal TMT analyses |
 | TMT sRBD hyposmia vs controls baseline analysis.R | Generation of manuscript figures and tables |
-| Brain test RBD vs controls LME model analysis.R | Baseline BRAIN test analyses in PSG-iRBD vs controls |
+| BRAIN test RBD vs controls LME model analysis.R | Baseline BRAIN test analyses in PSG-iRBD vs controls |
 | DFT RBD vs controls LME model analysis.R | Demographic and clinical group comparisons |
 | TMT RBD vs controls LME model analysis.R | Baseline BRAIN test analyses |
-| Brain test sRBD vs controls LME model analysis.R | Longitudinal BRAIN test analyses |
+| BRAIN test sRBD vs controls LME model analysis.R | Longitudinal BRAIN test analyses |
 | DFT sRBD vs controls LME model analysis.R | Baseline DFT analyses |
 | TMT sRBD vs controls LME model analysis.R | Longitudinal DFT analyses |
-| Brain test sRBD hyposmia vs controls LME model analysis.R | Baseline TMT analyses |
+| BRAIN test sRBD hyposmia vs controls LME model analysis.R | Baseline TMT analyses |
 | DFT sRBD hyposmia vs controls LME model analysis.R | Longitudinal TMT analyses |
 | TMT sRBD hyposmia vs controls LME model analysis.R | Generation of manuscript figures and tables |
 | CFA.R | Baseline BRAIN test analyses in PSG-iRBD vs controls |
-| Brain test RBD vs controls variance analysis.R | Baseline BRAIN test analyses in PSG-iRBD vs controls |
+| BRAIN test RBD vs controls variance analysis.R | Baseline BRAIN test analyses in PSG-iRBD vs controls |
 | DFT RBD vs controls variance analysis.R | Demographic and clinical group comparisons |
 | TMT RBD vs controls variance analysis.R | Baseline BRAIN test analyses |
-| Brain test sRBD vs controls variance analysis.R | Longitudinal BRAIN test analyses |
+| BRAIN test sRBD vs controls variance analysis.R | Longitudinal BRAIN test analyses |
 | DFT sRBD vs controls variance analysis.R | Baseline DFT analyses |
 | TMT sRBD vs controls variance analysis.R | Longitudinal DFT analyses |
-| Brain test sRBD hyposmia vs controls variance analysis.R | Baseline TMT analyses |
+| BRAIN test sRBD hyposmia vs controls variance analysis.R | Baseline TMT analyses |
 | DFT sRBD hyposmia vs controls variance analysis.R | Longitudinal TMT analyses |
 | TMTsRBD hyposmia vs controls variance analysis.R | Generation of manuscript figures and tables |
 
