@@ -18,6 +18,9 @@ Participants were classified into the following groups:
 ## Congitive Assessments
 - Trail Making Test (TMT)
 
+## Date cleaning
+All data was cleaned and wrangled before performing the code in the scripts in this repository. 
+
 ## Statistical Analyses
 The following analyses were performed:
 - Baseline group comparisons
@@ -29,22 +32,49 @@ The following analyses were performed:
 Intra-individual variability was quantified using Mean Squared Successive Differences (MSSD) across repeated assessments. 
 Longitudinal trajectories were examined using linear mixed-effects models. Variability differences between groups and over time were assessed using heteroscedastic mixed-effects models, allowing residual variance to vary acorss groups and/or time.
 
+## Analylis Scripts
+The repository contains separate scripts for each primary analysis conducted in the manuscript.
+
+| Script | Description |
+|----------|-------------|
+| 01_data_preparation.R | Data cleaning and derivation of analysis variables |
+| 02_demographics.R | Demographic and clinical group comparisons |
+| 03_BRAIN_baseline.R | Baseline BRAIN test analyses |
+| 04_BRAIN_longitudinal.R | Longitudinal BRAIN test analyses |
+| 05_DFT_baseline.R | Baseline DFT analyses |
+| 06_DFT_longitudinal.R | Longitudinal DFT analyses |
+| 07_TMT_baseline.R | Baseline TMT analyses |
+| 08_TMT_longitudinal.R | Longitudinal TMT analyses |
+| 09_figures_tables.R | Generation of manuscript figures and tables |
+
+
+
 ## Software Requirements
 Analyses were performed using:
 - R (verision 4.5.1)
 - RStudio
 
 Key packages include:
+
 tidyverse
+
 glm
+
 lme4
+
 lmerTest
+
 nlme
+
 emmeans
+
 ggplot2
+
 patchwork
+
 lavaan
 
-## Data
+## Data Availability
+Participant-level data is not publically available. This repository contains analysis code only.
 
 
