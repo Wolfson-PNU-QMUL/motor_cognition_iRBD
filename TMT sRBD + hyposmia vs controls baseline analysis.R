@@ -72,8 +72,6 @@ sRBD_hyp_control_baseline_data2 <- sRBD_hyp_control_baseline_data2 %>%
 
 table(sRBD_hyp_control_baseline_data2$hx_neuro_parkinsons, sRBD_hyp_control_baseline_data2$Code)
 
-write.csv(sRBD_hyp_control_baseline_data2, "Pilot/Baseline/sRBD hyposmia vs controls/sRBD_hyp_control_baseline_TMT_data.csv", row.names = FALSE)
-
 any(sRBD_hyp_control_baseline_data2$tmt_trailAminustrailB_exefcn_final_baseline == 0)
 any(sRBD_hyp_control_baseline_data2$tmt_trailB_reactiontime_baseline == 0)
 any(sRBD_hyp_control_baseline_data2$tmt_trailA_reactiontime_baseline == 0)
