@@ -74,8 +74,6 @@ RBD_control_baseline_data2 <- RBD_control_baseline_data2 %>%
 
 table(RBD_control_baseline_data2$hx_neuro_parkinsons, RBD_control_baseline_data2$Code)
 
-write.csv(RBD_control_baseline_data2, "Pilot/Baseline/RBD vs controls/RBD_control_baseline_TMT_data.csv", row.names = FALSE)
-
 any(RBD_control_baseline_data2$tmt_trailAminustrailB_exefcn_final_baseline == 0)
 any(RBD_control_baseline_data2$tmt_trailB_reactiontime_baseline == 0)
 any(RBD_control_baseline_data2$tmt_trailA_reactiontime_baseline == 0)
