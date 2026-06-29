@@ -76,9 +76,6 @@ RBD_control_baseline_data2 <- RBD_control_baseline_data2 %>%
 table(RBD_control_baseline_data2$hx_neuro_parkinsons, RBD_control_baseline_data2$Code)
 
 
-write.csv(RBD_control_baseline_data2, "BRAIN test/Pilot Study/Baseline/RBD vs controls/RBD_control_baseline_BT_data.csv", row.names = FALSE)
-write.csv(RBD_and_PD_bl_data, "BRAIN test/Pilot Study/Baseline/RBD vs controls/RBD_and_PD_bl_data.csv", row.names = FALSE)
-
 RBD_control_baseline_data2 <- read.csv("BRAIN test/Pilot Study/Baseline/RBD vs controls/RBD_control_baseline_BT_data.csv")
 
 #### baseline analysis RBD vs controls ####
