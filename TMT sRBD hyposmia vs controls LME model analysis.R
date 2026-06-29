@@ -133,10 +133,6 @@ sRBD_hyp_control_TMT_data2_clean <- sRBD_hyp_control_TMT_data2_clean %>%
   anti_join(sRBDhyp_and_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
 
-write.csv(sRBD_hyp_control_TMT_data2_clean, "Pilot/Longitudinal/sRBD hyposmia vs controls/sRBDhyp_con_long_TMT.csv", row.names = FALSE)
-
-
-
 # inspect data for outliers
 ggplot(sRBD_hyp_control_TMT_data2_clean, aes(x = factor(Year), y = tmt_trailA_reactiontime)) +
   geom_boxplot(fill = "#69b3a2", color = "#1f3552", outlier.color = "red", outlier.shape = 16, outlier.size = 2) +
