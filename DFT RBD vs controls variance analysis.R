@@ -73,13 +73,6 @@ matched_RBD_control_DFT_data2 <- matched_RBD_control_DFT_data2 %>%
   )
 
 
-write.csv(matched_RBD_control_DFT_data2, "DFT/RBD vs controls/matched_RBD_control_DFT_data2.csv",
-          row.names = FALSE)
-
-
-matched_RBD_control_DFT_data2 <- read_csv("C:/Users/hwx036/OneDrive - Queen Mary, University of London/PhD/2025- Year 2/Pilot- motor and cognitive/Variance analysis/Variance analysis/DFT/RBD vs controls/matched_RBD_control_DFT_data2.csv")
-
-
 ######## Exploratory data analysis #########
 # List of test columns
 cols_dft <- c(
@@ -382,8 +375,6 @@ variance_boot <- RBD_DFT_long_2tp %>%
 
 print(variance_boot, n = Inf, width = Inf)
 
-write.csv(variance_boot, "DFT/RBD vs controls/variance_boot.csv", row.names = FALSE)
-
 
 #Step 1c — Plot mean ± SD with bootstrap CI
 # Combine mean and bootstrap SD
@@ -439,10 +430,6 @@ for (m in measures) {
   
   print(p)
 }
-
-# Save the combined mean + SD + bootstrap CI
-write.csv(plot_data, "DFT/RBD vs controls/DFT_mean_SD_bootstrap.csv", row.names = FALSE)
-
 
 
 #Step 2: subject-level variance (“wobblers”) + wilcoxon rank
@@ -535,14 +522,6 @@ res_var <- calc_subject_variability(
 subject_variance_all <- res_var$subject_metrics
 stat_results_all     <- res_var$wilcox_tests
 
-#save
-write.csv(subject_variance_all,
-          "DFT/RBD vs controls/subject_variance_all_measures.csv",
-          row.names = FALSE)
-
-write.csv(stat_results_all,
-          "DFT/RBD vs controls/variability_stats_wilcoxon_all_measures.csv",
-          row.names = FALSE)
 
 #create boxplots
 make_variability_boxplot <- function(subject_tbl, measure_name, plot_title) {
@@ -731,10 +710,3 @@ summary_means <- RBD_DFT_long_2tp %>%
 
 
 print(summary_means, n = nrow(summary_means))
-
-
-
-
-
-
-
