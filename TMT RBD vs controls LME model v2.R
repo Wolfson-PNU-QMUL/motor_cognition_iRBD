@@ -151,9 +151,6 @@ RBD_control_TMT_data2_clean <- RBD_control_TMT_data2_clean %>%
   anti_join(RBD_and_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
 
-write.csv(RBD_control_TMT_data2_clean, "Pilot/Longitudinal/RBD vs controls/RBD_con_long_TMT.csv", row.names = FALSE)
-
-
 
 # inspect data for outliers
 ggplot(RBD_control_TMT_data2_clean, aes(x = factor(Year), y = tmt_trailA_reactiontime)) +
@@ -278,7 +275,6 @@ sum(is.na(RBD_control_TMT_data2_clean$gender))
 sum(is.na(RBD_control_TMT_data2_clean$age_session_baseline))
 sum(is.na(RBD_control_TMT_data2_clean$tmt_date_baseline))
 sum(is.na(RBD_control_TMT_data2_clean$tmt_date_lastfollowup))
-
 
 
 ### check distribution of data- density plots
