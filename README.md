@@ -73,25 +73,18 @@ Analyses were performed using:
 
 Key packages include:
 
-tidyverse
-
-glm
-
-lme4
-
-lmerTest
-
-nlme
-
-emmeans
-
-ggplot2
-
-patchwork
-
-lavaan
+- tidyverse
+- glm
+- lme4
+- lmerTest
+- nlme
+- emmeans
+- ggplot2
+- patchwork
+- lavaan
 
 ## Data Availability
 Participant-level data is not publically available. This repository contains analysis code only.
 
-
+## Author
+Harneek Chohan h.chohan@qmul.ac.uk
