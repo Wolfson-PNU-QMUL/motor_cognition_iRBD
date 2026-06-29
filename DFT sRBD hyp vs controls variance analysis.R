@@ -66,9 +66,6 @@ matched_sRBD_hyp_control_DFT_data2[cols_is] <- lapply(
 sum(is.nan(as.matrix(matched_sRBD_hyp_control_DFT_data2[cols_is])))
 sum(is.infinite(as.matrix(matched_sRBD_hyp_control_DFT_data2[cols_is])))
 
-write.csv(matched_sRBD_hyp_control_DFT_data2, "DFT/sRBD hyp vs controls/matched_sRBD_hyp_control_DFT_data2.csv",
-          row.names = FALSE)
-
 
 ######## Exploratory data analysis #########
 # List of your DFT columns
@@ -359,7 +356,6 @@ variance_boot <- sRBD_hyp_DFT_long_2tp %>%
 
 print(variance_boot, n = Inf, width = Inf)
 
-write.csv(variance_boot, "DFT/sRBD hyp vs controls/variance_boot.csv", row.names = FALSE)
 
 
 #Step 1c — Plot mean ± SD with bootstrap CI
@@ -415,9 +411,6 @@ for (m in measures) {
   
   print(p)
 }
-
-# Save the combined mean + SD + bootstrap CI
-write.csv(plot_data, "DFT/sRBD hyp vs controls/DFT_mean_SD_bootstrap_sRBD_hyp.csv", row.names = FALSE)
 
 
 #Step 2: subject-level variance (“wobblers”) + wilcoxon rank
@@ -509,15 +502,6 @@ res_var <- calc_subject_variability(
 
 subject_variance_all <- res_var$subject_metrics
 stat_results_all     <- res_var$wilcox_tests
-
-#save
-write.csv(subject_variance_all,
-          "DFT/sRBD hyp vs controls/subject_variance_all_measures_sRBD_hyp.csv",
-          row.names = FALSE)
-
-write.csv(stat_results_all,
-          "DFT/sRBD hyp vs controls/variability_stats_wilcoxon_all_measures_sRBD_hyp.csv",
-          row.names = FALSE)
 
 
 #create boxplots
