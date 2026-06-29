@@ -58,8 +58,6 @@ sRBD_control_baseline_data <- sRBD_control_baseline_data %>%
   anti_join(sRBD_and_PD_bl_data, by = c("PID2", "TokenFinal"))
 table(sRBD_control_baseline_data$hx_neuro_parkinsons, sRBD_control_baseline_data$Code)
 
-write.csv(sRBD_control_baseline_data, "DFT/Pilot study dft/Baseline/sRBD vs controls/sRBD_control_baseline_data.csv", row.names = FALSE)
-
 
 #### baseline analysis sRBD vs controls ####
 summary(sRBD_control_baseline_data)
