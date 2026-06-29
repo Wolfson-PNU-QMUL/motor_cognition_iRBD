@@ -160,7 +160,6 @@ sRBD_hypand_PD_longitudinal_data <- sRBD_hyp_control_BT_data_clean %>%
 sRBD_hyp_control_BT_data_clean <- sRBD_hyp_control_BT_data_clean %>%
   anti_join(sRBD_hypand_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
-write.csv(sRBD_hyp_control_BT_data_clean, "BRAIN test/Pilot study/Longitudinal/sRBD hyposmia vs controls/sRBD_hyp_con_long_BT.csv", row.names = FALSE)
 
 
 # log transform IS
