@@ -56,15 +56,15 @@ The repository contains separate scripts for each primary analysis conducted in 
 | DFT sRBD hyposmia vs controls LME model analysis.R | Longitudinal DFT analyses in sRBD + hypsomia vs controls |
 | TMT sRBD hyposmia vs controls LME model analysis.R | Longitudinal TMT analyses in sRBD + hypsomia vs controls |
 | CFA analysis code.R | Confirmatory factor analysis |
-| BRAIN test RBD vs controls variance analysis.R | Baseline BRAIN test analyses in PSG-iRBD vs controls |
-| DFT RBD vs controls variance analysis.R | Demographic and clinical group comparisons |
-| TMT RBD vs controls variance analysis.R | Baseline BRAIN test analyses |
-| BRAIN test sRBD vs controls variance analysis.R | Longitudinal BRAIN test analyses |
-| DFT sRBD vs controls variance analysis.R | Baseline DFT analyses |
-| TMT sRBD vs controls variance analysis.R | Longitudinal DFT analyses |
-| BRAIN test sRBD hyposmia vs controls variance analysis.R | Baseline TMT analyses |
-| DFT sRBD hyposmia vs controls variance analysis.R | Longitudinal TMT analyses |
-| TMTsRBD hyposmia vs controls variance analysis.R | Generation of manuscript figures and tables |
+| BRAIN test RBD vs controls variance analysis.R | Variance analysis BRAIN test in PSG-iRBD vs controls |
+| DFT RBD vs controls variance analysis.R | Variance analysis DFT in PSG-iRBD vs controls |
+| TMT RBD vs controls variance analysis.R | Variance analysis TMT in PSG-iRBD vs controls |
+| BRAIN test sRBD vs controls variance analysis.R | Variance analysis BRAIN test in sRBD vs controls |
+| DFT sRBD vs controls variance analysis.R | Variance analysis DFT in sRBD vs controls |
+| TMT sRBD vs controls variance analysis.R | Variance analysis TMT in sRBD vs controls |
+| BRAIN test sRBD hyposmia vs controls variance analysis.R | Variance analysis BRAIN test in sRBD + hyposmia vs controls |
+| DFT sRBD hyposmia vs controls variance analysis.R | Variance analysis DFT in sRBD + hyposmia vs controls |
+| TMTsRBD hyposmia vs controls variance analysis.R | Variance analysis TMT in sRBD + hyposmia vs controls |
 
 ## Software Requirements
 Analyses were performed using:
