@@ -156,9 +156,6 @@ RBD_control_BT_data_clean <- RBD_control_BT_data_clean %>%
   anti_join(RBD_and_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
 
-write.csv(RBD_control_BT_data_clean, "BRAIN test/Pilot study/Longitudinal/RBD vs controls/RBD_con_long_BT.csv", row.names = FALSE)
-
-
 # log transform IS
 RBD_control_BT_data_clean$braintest_worst_is_adj <- log(RBD_control_BT_data_clean$braintest_worst_is_adj)
 #remove NaN rows
