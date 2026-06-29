@@ -129,7 +129,6 @@ RBD_and_PD_longitudinal_data <- RBD_control_DFT_data2_filtered %>%
 RBD_control_DFT_data2_filtered <- RBD_control_DFT_data2_filtered %>%
   anti_join(RBD_and_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
-write.csv(RBD_control_DFT_data2_filtered, "DFT/Pilot study dft/Longitudinal/RBD vs controls/RBD_con_long_BT.csv", row.names = FALSE)
 
 
 # log transform IS
