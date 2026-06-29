@@ -71,9 +71,6 @@ sRBD_and_PD_bl_data <- sRBD_control_baseline_data %>%
 sRBD_control_baseline_data <- sRBD_control_baseline_data %>%
   anti_join(sRBD_and_PD_bl_data, by = c("PID2", "TokenFinal"))
 
-write.csv(sRBD_control_baseline_data, "BRAIN test/Pilot Study/Baseline/sRBD vs controls/sRBD_control_baseline_data.csv", row.names = FALSE)
-write.csv(sRBD_and_PD_bl_data, "BRAIN test/Pilot Study/Baseline/sRBD vs controls/sRBD_and_PD_bl_data.csv", row.names = FALSE)
-
 #### baseline analysis RBD vs controls ####
 summary(sRBD_control_baseline_data)
 #get rid of IDs with missing data
