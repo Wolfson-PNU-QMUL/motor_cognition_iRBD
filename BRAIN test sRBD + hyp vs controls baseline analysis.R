@@ -79,8 +79,6 @@ sRBD_hyp_control_baseline_data <- sRBD_hyp_control_baseline_data %>%
   anti_join(sRBDhyp_and_PD_bl_data, by = c("PID2", "TokenFinal"))
 table(sRBD_hyp_control_baseline_data$hx_neuro_parkinsons, sRBD_hyp_control_baseline_data$Code)
 
-write.csv(sRBD_hyp_control_baseline_data, "BRAIN test/Pilot study/Baseline/sRBD_hyposmia vs controls/sRBDhyp_control_baseline_BT_data.csv", row.names = FALSE)
-write.csv(sRBDhyp_and_PD_bl_data, "BRAIN test/Pilot study/Baseline/sRBD_hyposmia vs controls/sRBDhyp_and_PD_bl_data.csv", row.names = FALSE)
 
 
 #### baseline analysis RBD vs controls ####
