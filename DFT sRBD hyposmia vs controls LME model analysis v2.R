@@ -133,8 +133,6 @@ sRBD_hyp_PD_longitudinal_data <- sRBD_hyp_control_DFT_data2_filtered %>%
 sRBD_hyp_control_DFT_data2_filtered <- sRBD_hyp_control_DFT_data2_filtered %>%
   anti_join(sRBD_hyp_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
-write.csv(sRBD_hyp_control_DFT_data2_filtered, "DFT/Pilot study dft/Longitudinal/sRBD hyposmia vs controls/sRBD_hyp_con_long_BT.csv", row.names = FALSE)
-
 
 # log transform IS
 sRBD_hyp_control_DFT_data2_filtered$onefingertaptest_worst_is <- log(sRBD_hyp_control_DFT_data2_filtered$onefingertaptest_worst_is)
