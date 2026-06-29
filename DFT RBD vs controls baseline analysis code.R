@@ -54,7 +54,6 @@ RBD_and_PD_bl_data <- RBD_control_baseline_data %>%
 RBD_control_baseline_data <- RBD_control_baseline_data %>%
   anti_join(RBD_and_PD_bl_data, by = c("PID2", "TokenFinal"))
 
-write.csv(RBD_control_baseline_data, "DFT/Pilot study dft/Baseline/RBD vs controls/RBD_control_baseline_data.csv", row.names = FALSE)
 
 
 #### baseline analysis RBD vs controls ####
