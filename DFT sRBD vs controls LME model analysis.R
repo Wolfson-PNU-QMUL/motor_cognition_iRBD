@@ -131,8 +131,6 @@ sRBD_and_PD_longitudinal_data <- sRBD_control_DFT_data2_filtered %>%
 sRBD_control_DFT_data2_filtered <- sRBD_control_DFT_data2_filtered %>%
   anti_join(sRBD_and_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
-write.csv(sRBD_control_DFT_data2_filtered, "DFT/Pilot study dft/Longitudinal/sRBD vs controls/sRBD_con_long_BT.csv", row.names = FALSE)
-
 
 # log transform IS
 sRBD_control_DFT_data2_filtered$onefingertaptest_worst_is <- log(sRBD_control_DFT_data2_filtered$onefingertaptest_worst_is)
@@ -288,7 +286,6 @@ t.test(onefingertaptest_worst_at ~ Code, data = subset(df_filtered, Timepoint ==
 
 t.test(onefingertaptest_worst_ks ~ Code, data = subset(df_filtered, Timepoint == "baseline"))
 t.test(onefingertaptest_worst_ks ~ Code, data = subset(df_filtered, Timepoint == "lastfollowup"))
-
 
 
 ##############   Linear Mixed Effect Regression    ##############
