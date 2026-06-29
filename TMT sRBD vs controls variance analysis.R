@@ -56,9 +56,6 @@ matched_sRBD_control_TMT_data2 <- matched_sRBD_control_TMT_data %>%
   )
 
 
-write.csv(matched_sRBD_control_TMT_data2, "TMT/sRBD vs controls/matched_sRBD_control_TMT_data2.csv",
-          row.names = FALSE)
-
 
 ######## Exploratory data analysis #########
 # List of your TMT columns
@@ -390,8 +387,6 @@ variance_boot <- sRBD_TMT_long_qc %>%
 
 print(variance_boot, n = Inf, width = Inf)
 
-write.csv(variance_boot, "TMT/sRBD vs controls/variance_boot_sRBD.csv", row.names = FALSE)
-
 
 #Step 1c — Plot mean ± SD with bootstrap CI
 # Combine mean and bootstrap SD
@@ -440,10 +435,6 @@ for (m in measures) {
   
   print(p)
 }
-
-
-# Save the combined mean + SD + bootstrap CI
-write.csv(plot_data, "TMT/sRBD vs controls/TMT_mean_SD_bootstrap_sRBD.csv", row.names = FALSE)
 
 
 #Step 2: subject-level variance (“wobblers”) + wilcoxon rank
@@ -536,14 +527,6 @@ res_var <- calc_subject_variability(
 subject_variance_all <- res_var$subject_metrics
 stat_results_all     <- res_var$wilcox_tests
 
-#save
-write.csv(subject_variance_all,
-          "TMT/sRBD vs controls/subject_variance_all_measures_sRBD.csv",
-          row.names = FALSE)
-
-write.csv(stat_results_all,
-          "TMT/sRBD vs controls/variability_stats_wilcoxon_all_measures_sRBD.csv",
-          row.names = FALSE)
 
 #create boxplots
 make_variability_boxplot <- function(subject_tbl, measure_name, plot_title) {
