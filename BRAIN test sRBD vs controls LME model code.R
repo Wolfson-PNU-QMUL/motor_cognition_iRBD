@@ -158,8 +158,6 @@ sRBD_and_PD_longitudinal_data <- sRBD_control_BT_data_clean %>%
 sRBD_control_BT_data_clean <- sRBD_control_BT_data_clean %>%
   anti_join(sRBD_and_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
-write.csv(sRBD_control_BT_data_clean, "BRAIN test/Pilot study/Longitudinal/sRBD vs controls/sRBD_con_long_BT.csv", row.names = FALSE)
-
 
 # log transform IS
 sRBD_control_BT_data_clean$braintest_worst_is_adj <- log(sRBD_control_BT_data_clean$braintest_worst_is_adj)
