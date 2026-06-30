@@ -17,8 +17,6 @@ library(nlme)
 library(tidybayes)
 library(moments)
 
-
-matched_sRBD_hyp_control_DFT_data <- read_csv("DFT/sRBD hyp vs controls/matched_sRBD_hyp_control_DFT_data.csv")
 View(matched_sRBD_hyp_control_DFT_data)
 
 table(matched_sRBD_hyp_control_DFT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
