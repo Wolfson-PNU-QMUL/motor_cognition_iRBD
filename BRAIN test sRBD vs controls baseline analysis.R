@@ -7,7 +7,6 @@ library(moments)
 library(broom) 
 library(ResourceSelection) 
 
-sRBD_control_BT_data <- read_csv("BRAIN test/sRBD_control_BT_data.csv")
 View(sRBD_control_BT_data)
 #rename the 'yes' 
 sRBD_control_BT_data <- sRBD_control_BT_data %>%
