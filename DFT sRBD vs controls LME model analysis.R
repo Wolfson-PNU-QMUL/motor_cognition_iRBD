@@ -20,7 +20,6 @@ library(ggdist)
 library(emmeans)
 library(nortest)
 
-sRBD_control_DFT_data <- read_csv("DFT/sRBD_control_DFT_data.csv")
 
 table(sRBD_control_DFT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 #rename the 'yes' 
