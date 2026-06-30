@@ -7,8 +7,6 @@ library(moments)
 library(broom) 
 library(ResourceSelection)
 
-
-RBD_control_BT_data <- read_csv("BRAIN test/RBD_control_BT_data.csv")
 table(RBD_control_BT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 #rename the 'yes' 
 RBD_control_BT_data <- RBD_control_BT_data %>%
