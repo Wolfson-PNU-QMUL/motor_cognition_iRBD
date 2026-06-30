@@ -15,7 +15,6 @@ library(lme4)
 library(lmerTest)
 library(nlme) # for heteroscedastic LMEs
 
-matched_RBD_control_BT_data <- read_csv("BRAIN test/RBD vs controls/matched_RBD_control_BT_data.csv")
 View(matched_RBD_control_BT_data)
 
 
