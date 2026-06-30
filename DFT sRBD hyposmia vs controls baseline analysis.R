@@ -8,8 +8,6 @@ library(broom)
 library(ResourceSelection) 
 
 
-sRBD_hyp_control_DFT_data <- read_csv("DFT/sRBD_hyp_control_DFT_data.csv")
-
 table(sRBD_hyp_control_DFT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 #rename the 'yes' 
 sRBD_hyp_control_DFT_data <- sRBD_hyp_control_DFT_data %>%
