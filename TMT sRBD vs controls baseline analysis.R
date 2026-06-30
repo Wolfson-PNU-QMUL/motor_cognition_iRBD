@@ -7,8 +7,6 @@ library(moments)
 library(broom)
 library(ResourceSelection)
 
-sRBD_control_TMT_data <- read_csv("sRBD_control_TMT_data.csv")
-
 ## remove those with essential tremor and under 50
 sRBD_control_TMT_data <- sRBD_control_TMT_data %>%
   filter(hx_essentialtremor != "Yes") %>% 
