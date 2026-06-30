@@ -17,8 +17,6 @@ library(nlme)
 library(tidybayes)
 library(moments)
 
-
-matched_RBD_control_TMT_data <- read_csv("TMT/RBD vs controls/matched_RBD_control_TMT_data.csv")
 View(matched_RBD_control_TMT_data)
 
 table(matched_RBD_control_TMT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
