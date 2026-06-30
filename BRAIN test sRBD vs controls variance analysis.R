@@ -15,7 +15,6 @@ library(lme4)
 library(lmerTest)
 library(nlme) 
 
-matched_sRBD_control_BT_data <- read_csv("BRAIN test/sRBD vs controls/matched_sRBD_control_BT_data.csv")
 View(matched_sRBD_control_BT_data)
 
 table(matched_sRBD_control_BT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
