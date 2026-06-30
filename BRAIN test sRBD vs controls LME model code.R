@@ -20,8 +20,6 @@ library(ggdist)
 library(emmeans)
 library(nortest)
 
-sRBD_control_BT_data <- read_csv("BRAIN test/sRBD_control_BT_data.csv")
-
 table(sRBD_control_BT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 #rename the 'yes' 
 sRBD_control_BT_data <- sRBD_control_BT_data %>%
