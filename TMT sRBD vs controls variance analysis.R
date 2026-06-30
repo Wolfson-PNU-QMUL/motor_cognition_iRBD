@@ -17,8 +17,6 @@ library(nlme)
 library(tidybayes)
 library(moments)
 
-
-matched_sRBD_control_TMT_data <- read_csv("TMT/sRBD vs controls/matched_sRBD_control_TMT_data.csv")
 View(matched_sRBD_control_TMT_data)
 
 
