@@ -7,23 +7,12 @@ library(lavaan)
 
 
 #read in datasets
-RBD_control_BT_data <- read_csv("C:/Users/hwx036/OneDrive - Queen Mary, University of London/PhD/2025- Year 2/Motor analysis/Finger tapping - harmonised data/Motor testing/BRAIN test/RBD_control_BT_data.csv")
-View(RBD_control_BT_data)
-
-sRBD_control_BT_data <- read_csv("C:/Users/hwx036/OneDrive - Queen Mary, University of London/PhD/2025- Year 2/Motor analysis/Finger tapping - harmonised data/Motor testing/BRAIN test/sRBD_control_BT_data.csv")
-View(sRBD_control_BT_data)
-
-sRBD_hyp_control_BT_data <- read_csv("C:/Users/hwx036/OneDrive - Queen Mary, University of London/PhD/2025- Year 2/Motor analysis/Finger tapping - harmonised data/Motor testing/BRAIN test/sRBD_hyp_control_BT_data.csv")
-View(sRBD_hyp_control_BT_data)
-
-RBD_control_TMT_data <- read_csv("C:/Users/hwx036/OneDrive - Queen Mary, University of London/PhD/2024- Year 1/Preliminary analysis/Cognitive analysis/TMT/TMT data extraction/RBD_control_TMT_data.csv")
-View(RBD_control_TMT_data)
-
-sRBD_control_TMT_data <- read_csv("C:/Users/hwx036/OneDrive - Queen Mary, University of London/PhD/2024- Year 1/Preliminary analysis/Cognitive analysis/TMT/TMT data extraction/sRBD_control_TMT_data.csv")
-View(sRBD_control_TMT_data)
-
-sRBD_hyp_control_TMT_data <- read_csv("C:/Users/hwx036/OneDrive - Queen Mary, University of London/PhD/2024- Year 1/Preliminary analysis/Cognitive analysis/TMT/TMT data extraction/sRBD_hyp_control_TMT_data.csv")
-View(sRBD_hyp_control_TMT_data)
+RBD_control_BT_data
+sRBD_control_BT_data
+sRBD_hyp_control_BT_data
+RBD_control_TMT_data
+sRBD_control_TMT_data
+sRBD_hyp_control_TMT_data
 
 #create BRAIN test master data set
 RBD_control_BT_data <- RBD_control_BT_data %>%
