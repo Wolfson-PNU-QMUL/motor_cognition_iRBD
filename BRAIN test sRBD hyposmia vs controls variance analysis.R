@@ -17,8 +17,6 @@ library(nlme) # for heteroscedastic LMEs
 library(tidybayes)
 library(moments)
 
-
-matched_sRBD_hyp_control_BT_data <- read_csv("BRAIN test/sRBD hyp vs controls/matched_sRBD_hyp_control_BT_data.csv")
 View(matched_sRBD_hyp_control_BT_data)
 
 table(matched_sRBD_hyp_control_BT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
