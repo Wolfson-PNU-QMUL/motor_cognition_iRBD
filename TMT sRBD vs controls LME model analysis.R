@@ -16,7 +16,6 @@ library(writexl)
 library(e1071)
 library(broom.mixed)
 
-sRBD_control_TMT_data <- read_csv("sRBD_control_TMT_data.csv")
 any(is.na(sRBD_control_TMT_data$PID2))
 any(is.na(sRBD_control_TMT_data$TokenFinal)) 
 
