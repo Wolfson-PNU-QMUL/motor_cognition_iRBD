@@ -7,7 +7,6 @@ library(moments)
 library(broom) 
 library(ResourceSelection)  
 
-RBD_control_DFT_data <- read_csv("DFT/RBD_control_DFT_data.csv")
 table(RBD_control_DFT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 #rename the 'yes' 
 RBD_control_DFT_data <- RBD_control_DFT_data %>%
