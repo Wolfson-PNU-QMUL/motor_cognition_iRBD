@@ -9,7 +9,7 @@ library(ResourceSelection) # for Hosmer-Lemeshow test
 
 getwd()
 
-RBD_control_BT_data <- read_csv("BRAIN test/RBD_control_BT_data.csv")
+#read in dataset
 table(RBD_control_BT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 #rename the 'yes' 
 RBD_control_BT_data <- RBD_control_BT_data %>%
