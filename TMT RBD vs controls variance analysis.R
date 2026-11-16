@@ -1,4 +1,4 @@
-######## TMT RBD vs controls longitudinal variance analysis ########
+####### TMT RBD vs controls longitudinal variance analysis ########
 library(markdown)
 library(data.table)
 library(tidyverse)
@@ -17,6 +17,13 @@ library(nlme)
 library(tidybayes)
 library(moments)
 
+getwd()
+
+sink()
+
+pdf()
+
+#read in dataset
 View(matched_RBD_control_TMT_data)
 
 table(matched_RBD_control_TMT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
@@ -38,10 +45,10 @@ matched_RBD_control_TMT_data %>%
 
 # Define the columns of interest
 tmt_cols <- c(
-  "tmt_trailAminustrailB_exefcn_final_4", "tmt_trailAminustrailB_exefcn_final_5", "tmt_trailAminustrailB_exefcn_final_7",
-  "tmt_trailAminustrailB_exefcn_final_8", "tmt_trailB_reactiontime_4", "tmt_trailB_reactiontime_5", "tmt_trailB_reactiontime_7",
-  "tmt_trailB_reactiontime_8", "tmt_trailA_reactiontime_4", "tmt_trailA_reactiontime_5", "tmt_trailAminustrailB_exefcn_final_7",
-  "tmt_trailA_reactiontime_8"
+  "tmt_trailA_reactiontime_4", "tmt_trailA_reactiontime_5", "tmt_trailA_reactiontime_7", "tmt_trailA_reactiontime_8",
+  "tmt_trailB_reactiontime_4", "tmt_trailB_reactiontime_5", "tmt_trailB_reactiontime_7", "tmt_trailB_reactiontime_8",
+  "tmt_trailBminustrailA_exefcn_final_4", "tmt_trailBminustrailA_exefcn_final_5", "tmt_trailBminustrailA_exefcn_final_7",
+  "tmt_trailBminustrailA_exefcn_final_8"
 )
 
 # Remove participants with all test data missing
@@ -51,24 +58,18 @@ matched_RBD_control_TMT_data2 <- matched_RBD_control_TMT_data %>%
       ncol(select(., all_of(tmt_cols)))
   )
 
+#save file
 
 
 ######## Exploratory data analysis #########
-# List of TMT columns
-cols_tmt <- c(
-  "tmt_trailAminustrailB_exefcn_final_4", "tmt_trailAminustrailB_exefcn_final_5", "tmt_trailAminustrailB_exefcn_final_7",
-  "tmt_trailAminustrailB_exefcn_final_8", "tmt_trailB_reactiontime_4", "tmt_trailB_reactiontime_5", "tmt_trailB_reactiontime_7",
-  "tmt_trailB_reactiontime_8", "tmt_trailA_reactiontime_4", "tmt_trailA_reactiontime_5", "tmt_trailAminustrailB_exefcn_final_7",
-  "tmt_trailA_reactiontime_8")
-
 #check columns
 names(matched_RBD_control_TMT_data2)[!sapply(matched_RBD_control_TMT_data2, is.numeric)]
 
 
 #make columns numeric
 cols_to_convert <- c(
-  "tmt_trailAminustrailB_exefcn_final_4", "tmt_trailAminustrailB_exefcn_final_5",
-  "tmt_trailAminustrailB_exefcn_final_7", "tmt_trailAminustrailB_exefcn_final_8",
+  "tmt_trailBminustrailA_exefcn_final_4", "tmt_trailBminustrailA_exefcn_final_5",
+  "tmt_trailBminustrailA_exefcn_final_7", "tmt_trailBminustrailA_exefcn_final_8",
   "tmt_trailB_reactiontime_4", "tmt_trailB_reactiontime_5",
   "tmt_trailB_reactiontime_7", "tmt_trailB_reactiontime_8",
   "tmt_trailA_reactiontime_4", "tmt_trailA_reactiontime_5",
@@ -80,7 +81,7 @@ cols_to_convert <- c(
 matched_RBD_control_TMT_data2[cols_to_convert] <- lapply(matched_RBD_control_TMT_data2[cols_to_convert], as.numeric)
 
 
-#remove participants with ALL test data missing 
+#remove participants with ALL TMT data missing 
 matched_RBD_control_TMT_data2 <- matched_RBD_control_TMT_data2 %>%
   filter(
     rowSums(is.na(select(., all_of(cols_to_convert)))) <
@@ -88,10 +89,10 @@ matched_RBD_control_TMT_data2 <- matched_RBD_control_TMT_data2 %>%
   )
 
 
-# Pivot to long format but keep all non test columns
+# Pivot to long format but keep all non-TMT columns
 RBD_TMT_long <- matched_RBD_control_TMT_data2 %>%
   pivot_longer(
-    cols = all_of(cols_tmt),                 # pivot only the TMT columns
+    cols = all_of(tmt_cols),                 # pivot only the TMT columns
     names_to = c("Measure", "Session"),
     names_pattern = "(.*)_(\\d+)$",          # separate base name + session number
     values_to = "Value"
@@ -103,6 +104,7 @@ RBD_TMT_long <- matched_RBD_control_TMT_data2 %>%
   ungroup()
 
 
+
 # check how many timepoints
 RBD_TMT_long %>%
   group_by(Measure, PID2) %>%
@@ -110,10 +112,10 @@ RBD_TMT_long %>%
   count(Measure, n)
 
 RBD_TMT_long %>%
-  filter(!is.na(Value)) %>%                       
+  filter(!is.na(Value)) %>%                       # only observed values
   group_by(Measure, PID2) %>%
-  summarise(n_obs = n(), .groups = "drop") %>%    
-  filter(n_obs == 4) %>%                        
+  summarise(n_obs = n(), .groups = "drop") %>%    # number of observed timepoints
+  filter(n_obs == 4) %>%                          # complete 4
   count(Measure, name = "n_IDs_complete_4tp")
 
 RBD_TMT_long %>%
@@ -130,7 +132,7 @@ RBD_TMT_long_all <- RBD_TMT_long %>%
   group_by(PID2, Code, Measure) %>%
   filter(n() >= 2) %>%                 
   arrange(Session, .by_group = TRUE) %>%
-  mutate(RelativeVisit = row_number()) %>%  
+  mutate(RelativeVisit = row_number()) %>%   # recompute visit order
   ungroup()
 
 RBD_TMT_long_all %>%
@@ -138,15 +140,50 @@ RBD_TMT_long_all %>%
   summarise(n = n(), .groups = "drop") %>%
   count(Measure, n)
 
-#check if RT is actually 0
+#check whether each participant has the same number of observations for TMT-A and TMT-B
 RBD_TMT_long_all %>%
-  filter(
-    Measure %in% c("tmt_trailA_reactiontime", "tmt_trailB_reactiontime"),
-    Value == 0
+  filter(Measure %in% c(
+    "tmt_trailA_reactiontime",
+    "tmt_trailB_reactiontime"
+  )) %>%
+  group_by(PID2, Measure) %>%
+  summarise(n_visits = n_distinct(RelativeVisit), .groups = "drop") %>%
+  tidyr::pivot_wider(
+    names_from = Measure,
+    values_from = n_visits
   ) %>%
-  select(PID2, Code, Session, RelativeVisit, Measure, Value) %>%
-  arrange(PID2, Session)
-#no zeros
+  count(
+    tmt_trailA_reactiontime,
+    tmt_trailB_reactiontime
+  )
+
+#check EF against A and B reaction times
+RBD_TMT_long_all %>%
+  filter(Measure == "tmt_trailBminustrailA_exefcn_final") %>%
+  group_by(PID2) %>%
+  summarise(
+    n_EF = n_distinct(RelativeVisit),
+    .groups = "drop"
+  ) %>%
+  count(n_EF)
+
+#check RT data
+RBD_TMT_long_all %>%
+  filter(Measure %in% c(
+    "tmt_trailA_reactiontime",
+    "tmt_trailB_reactiontime"
+  )) %>%
+  group_by(Measure, Code) %>%
+  summarise(
+    n = sum(!is.na(Value)),
+    min_value = min(Value, na.rm = TRUE),
+    n_negative = sum(Value < 0, na.rm = TRUE),
+    n_zero = sum(Value == 0, na.rm = TRUE),
+    n_missing = sum(is.na(Value)),
+    .groups = "drop"
+  )
+# no zeros in TMT-A or TMT-B so can log transform
+
 
 
 # Raincloud plot
@@ -246,10 +283,6 @@ ggplot(outlier_data, aes(x = factor(RelativeVisit), y = Value, fill = Code)) +
   )
 
 
-RBD_TMT_long_all <- RBD_TMT_long_all %>%
-  mutate(RelativeVisit = as.numeric(RelativeVisit))
-
-
 #check if data is normally distributed 
 ggplot(RBD_TMT_long_all %>% filter(Measure == "tmt_trailA_reactiontime"), 
        aes(x = Value, fill = Code)) +
@@ -260,7 +293,7 @@ ggplot(RBD_TMT_long_all %>% filter(Measure == "tmt_trailA_reactiontime"),
     y = "Density",
     fill = "Group"
   ) +
-  xlim(250,2500) +
+  xlim(200,2700) +
   theme_minimal(base_size = 14)
 
 
@@ -273,11 +306,11 @@ ggplot(RBD_TMT_long_all %>% filter(Measure == "tmt_trailB_reactiontime"),
     y = "Density",
     fill = "Group"
   ) +
-  xlim(0,4500) +
+  xlim(0,6000) +
   theme_minimal(base_size = 14)
 
 
-ggplot(RBD_TMT_long_all %>% filter(Measure == "tmt_trailAminustrailB_exefcn_final"), 
+ggplot(RBD_TMT_long_all %>% filter(Measure == "tmt_trailBminustrailA_exefcn_final"), 
        aes(x = Value, fill = Code)) +
   geom_density(alpha = 0.4) +
   labs(
@@ -286,7 +319,7 @@ ggplot(RBD_TMT_long_all %>% filter(Measure == "tmt_trailAminustrailB_exefcn_fina
     y = "Density",
     fill = "Group"
   ) +
-  xlim(-1050,2500) +
+  xlim(-1700,4000) +
   theme_minimal(base_size = 14)
 
 
@@ -310,7 +343,7 @@ for(m in unique(RBD_TMT_long_all$Measure)) {
   gridExtra::grid.arrange(
     ggplot(data_m, aes(x = Value)) +
       geom_histogram(aes(y = ..density..), bins = 30, fill = "#69b3a2", alpha = 0.6) +
-      geom_density(color = "#1f3552", size = 1) +
+      geom_density(color = "#1f3552", linewidth = 1) +
       labs(title = paste(m, "- Histogram & Density"), x = "Value", y = "Density") +
       theme_minimal(base_size = 12),
     
@@ -323,19 +356,180 @@ for(m in unique(RBD_TMT_long_all$Measure)) {
   )
 }
 
+#QC for TMT-A and TMT-B
+apply_tmt_qc <- function(RBD_TMT_long_all,
+                         measure_col = "Measure",
+                         value_col = "Value") {
+  RBD_TMT_long_all %>%
+    mutate(
+      Value_num = suppressWarnings(as.numeric(.data[[value_col]])),
+      
+      qc_flag = case_when(
+        is.na(Value_num) ~ "missing",
+        .data[[measure_col]] %in% c(
+          "tmt_trailA_reactiontime",
+          "tmt_trailB_reactiontime"
+        ) & Value_num <= 0 ~ "invalid_nonpositive",
+        TRUE ~ "ok"
+      ),
+      
+      Value_clean = case_when(
+        qc_flag == "invalid_nonpositive" ~ NA_real_,
+        TRUE ~ Value_num
+      )
+    )
+}
+RBD_TMT_long_qc <- apply_tmt_qc(RBD_TMT_long_all)
+#check
+RBD_TMT_long_qc %>%
+  count(Measure, qc_flag)
+
+# log transform TMT-A and TMT-B
+RBD_TMT_long_qc <- RBD_TMT_long_qc %>%
+  mutate(
+    Value_log = if_else(
+      Measure %in% c(
+        "tmt_trailA_reactiontime",
+        "tmt_trailB_reactiontime"
+      ),
+      log(if_else(
+        Measure %in% c(
+          "tmt_trailA_reactiontime",
+          "tmt_trailB_reactiontime"
+        ),
+        Value_clean,
+        1
+      )),
+      NA_real_
+    )
+  )
+
+#check
+RBD_TMT_long_qc %>%
+  filter(Measure %in% c(
+    "tmt_trailA_reactiontime",
+    "tmt_trailB_reactiontime"
+  )) %>%
+  group_by(Measure) %>%
+  summarise(
+    n = sum(!is.na(Value_log)),
+    min = min(Value_log, na.rm = TRUE),
+    max = max(Value_log, na.rm = TRUE),
+    mean = mean(Value_log, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+#check each participant has 1 TMT-A and TMT-B
+RBD_TMT_long_qc %>%
+  filter(Measure %in% c(
+    "tmt_trailA_reactiontime",
+    "tmt_trailB_reactiontime"
+  )) %>%
+  count(PID2, RelativeVisit, Measure) %>%
+  summarise(
+    duplicate_combinations = sum(n > 1)
+  )
+
+
+# Calculate new log-transformed EF
+TMT_EF <- RBD_TMT_long_qc %>%
+  filter(Measure %in% c(
+    "tmt_trailA_reactiontime",
+    "tmt_trailB_reactiontime"
+  )) %>%
+  select(
+    PID2, TokenFinal, RelativeVisit, Code,
+    age_session_baseline, gender,
+    Measure, Value_log
+  ) %>%
+  tidyr::pivot_wider(
+    names_from = Measure,
+    values_from = Value_log
+  ) %>%
+  mutate(
+    Value_log_EF = tmt_trailB_reactiontime -
+      tmt_trailA_reactiontime
+  ) %>%
+  filter(
+    !is.na(tmt_trailA_reactiontime),
+    !is.na(tmt_trailB_reactiontime)
+  )
+
+# Add new log-transformed EF to long dataset
+TMT_log <- TMT_EF %>%
+  transmute(
+    PID2,
+    TokenFinal,
+    RelativeVisit,
+    Code,
+    age_session_baseline,
+    gender,
+    Measure = "TMT_EF_log",
+    Value = Value_log_EF
+  )
+
+# Rebuild final long dataset
+RBD_TMT_long_final <- bind_rows(
+  RBD_TMT_long_qc,
+  TMT_log
+)
+
+# Check measure counts
+RBD_TMT_long_final %>%
+  count(Measure)
+
+# Check logged values
+RBD_TMT_long_final %>%
+  filter(Measure %in% c(
+    "tmt_trailA_reactiontime",
+    "tmt_trailB_reactiontime",
+    "TMT_EF_log"
+  )) %>%
+  group_by(Measure) %>%
+  summarise(
+    n_logged = sum(
+      if_else(Measure == "TMT_EF_log", !is.na(Value), !is.na(Value_log))
+    ),
+    .groups = "drop"
+  )
+
+# Check age and gender for EF
+RBD_TMT_long_final %>%
+  filter(Measure == "TMT_EF_log") %>%
+  summarise(
+    n = n(),
+    missing_age = sum(is.na(age_session_baseline)),
+    missing_gender = sum(is.na(gender))
+  )
+
 
 ######### Variance Analysis ######### 
+#create column for logged values
+RBD_TMT_long_final <- RBD_TMT_long_final %>%
+  mutate(
+    Value_for_analysis = case_when(
+      Measure %in% c(
+        "tmt_trailA_reactiontime",
+        "tmt_trailB_reactiontime"
+      ) ~ Value_log,
+      Measure == "TMT_EF_log" ~ Value,
+      TRUE ~ NA_real_
+    )
+  )
+
 #Step 1a — Compute mean, SD, and sample size per group × year × measure
-variance_summary <- RBD_TMT_long_all %>%
+variance_summary <- RBD_TMT_long_final %>%
+  filter(Measure != "tmt_trailBminustrailA_exefcn_final") %>%
   group_by(Measure, RelativeVisit, Code) %>%
   summarise(
-    n = sum(!is.na(Value)),
-    mean_value = mean(Value, na.rm = TRUE),
-    sd_value = sd(Value, na.rm = TRUE),
+    n = sum(!is.na(Value_for_analysis)),
+    mean_value = mean(Value_for_analysis, na.rm = TRUE),
+    sd_value = sd(Value_for_analysis, na.rm = TRUE),
     .groups = "drop"
   )
 
 print(variance_summary)
+
 
 #Step 1b — Bootstrap SD for confidence intervals (small sample size)
 # Function to compute SD for bootstrapping
@@ -353,16 +547,21 @@ bootstrap_sd_ci <- function(x, R = 1000, conf = 0.95) {
 }
 
 # Apply to all groups
-variance_boot <- RBD_TMT_long_all %>%
+variance_boot <- RBD_TMT_long_final %>%
+  filter(Measure != "tmt_trailBminustrailA_exefcn_final") %>%
   group_by(Measure, RelativeVisit, Code) %>%
   summarise(
-    n = sum(!is.na(Value)),
-    boot_results = list(bootstrap_sd_ci(Value)),
+    n = sum(!is.na(Value_for_analysis)),
+    boot_results = list(
+      bootstrap_sd_ci(Value_for_analysis[!is.na(Value_for_analysis)])
+    ),
     .groups = "drop"
   ) %>%
   unnest(cols = c(boot_results))
 
 print(variance_boot, n = Inf, width = Inf)
+
+#save file
 
 
 #Step 1c — Plot mean ± SD with bootstrap CI
@@ -372,11 +571,20 @@ plot_data <- variance_summary %>%
 
 # Get unique measures
 measures <- unique(plot_data$Measure)
+measures
 
+# Named vector for measure labels
 measure_labels <- c(
-  "tmt_trailAminustrailB_exefcn_final" = "Executive Function",
-  "tmt_trailA_reactiontime" = "Trail A Reaction Time",
-  "tmt_trailB_reactiontime" = "Trail B Reaction Time"
+  "tmt_trailA_reactiontime" = "TMT-A",
+  "tmt_trailB_reactiontime" = "TMT-B",
+  "TMT_EF_log"              = "TMT Executive Function"
+)
+
+# Directionality info for subtitle
+measure_direction <- c(
+  "tmt_trailA_reactiontime" = "Higher = worse",
+  "tmt_trailB_reactiontime" = "Higher = worse",
+  "TMT_EF_log"              = "Higher = worse"
 )
 
 plot_data <- plot_data %>%
@@ -389,20 +597,22 @@ for (m in measures) {
   p <- plot_data %>%
     filter(Measure == m) %>%
     ggplot(aes(x = RelativeVisit, y = mean_value, color = Code, group = Code, fill = Code)) +
-    geom_line(size = 1) +
+    geom_ribbon(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value),
+                alpha = 0.2, color = NA) +
+    geom_line(linewidth = 1) +
     geom_point(size = 2) +
-    geom_ribbon(aes(ymin = mean_value - sd_lower, ymax = mean_value + sd_upper),
-                alpha = 0.20, color = NA) +
     labs(
-      title = paste0("TMT – ", measure_labels[m], " Over Time (Mean ± SD)"),
-      x = "Year",
-      y = "Score",
+      title = paste0("TMT test – ", measure_labels[m], " Over Time (Mean ± SD)"),
+      subtitle = measure_direction[m],
+      x = "Visit",
+      y = "Mean score (log-transformed)",
       color = "Group",
-      fill = "Group"
+      fill = "Group",
+      caption = "Lines = group mean; shaded area = ±1 SD"
     ) +
     theme_minimal(base_size = 14) +
     theme(
-      plot.title    = element_text(hjust = 0.5, face = "bold"),
+      plot.title = element_text(hjust = 0.5, face = "bold"),
       plot.subtitle = element_text(hjust = 0.5, face = "italic"),
       legend.position = "top"
     )
@@ -410,228 +620,226 @@ for (m in measures) {
   print(p)
 }
 
+# Save the combined mean + SD + bootstrap CI
 
 
-#Step 2: subject-level variance (“wobblers”) + wilcoxon rank
-calc_subject_variability <- function(long_df,
-                                     measures,
-                                     id_col   = "PID2",
-                                     group_col = "Code",
-                                     time_col = "RelativeVisit",
-                                     value_col = "Value",
-                                     exact_two_sided = FALSE) {
-  
-  stopifnot(all(c("Measure", id_col, group_col, time_col, value_col) %in% names(long_df)))
-  stopifnot(all(measures %in% unique(long_df$Measure)))
-  
-  # Helper: compute SD, Range, MSSD for one subject (already ordered by time)
-  subject_metrics <- function(x) {
-    x <- x[!is.na(x)]
-    if (length(x) == 0) {
-      return(c(n_timepoints = 0, sd_subject = NA_real_, range_subject = NA_real_, mssd = NA_real_))
-    }
-    sdv <- if (length(x) >= 2) sd(x) else NA_real_
-    rgv <- if (length(x) >= 1) max(x) - min(x) else NA_real_
-    msv <- if (length(x) >= 2) mean(diff(x)^2) else NA_real_
-    c(n_timepoints = length(x), sd_subject = sdv, range_subject = rgv, mssd = msv)
-  }
-  
-  # One row per participant × measure with SD, Range, MSSD
-  subj_tbl <- long_df %>%
-    dplyr::filter(.data$Measure %in% measures) %>%
-    dplyr::arrange(.data[[id_col]], .data$Measure, .data[[time_col]]) %>%
-    dplyr::group_by(.data[[id_col]], .data[[group_col]], .data$Measure) %>%
-    dplyr::summarise(metrics = list(subject_metrics(.data[[value_col]])),
-                     .groups = "drop") %>%
-    tidyr::unnest_wider(metrics)
-  
-  # Wilcoxon tests (cases vs controls) for SD, Range, MSSD per measure
-  metrics_to_test <- c("sd_subject", "range_subject", "mssd")
-  wilcox_rows <- list()
-  
-  for (m in unique(subj_tbl$Measure)) {
-    dat_m <- subj_tbl %>% dplyr::filter(Measure == m)
-    if (dplyr::n_distinct(dat_m[[group_col]]) < 2) next
-    
-    for (met in metrics_to_test) {
-      d2 <- dat_m %>% dplyr::filter(!is.na(.data[[met]]))
-      
-      if (dplyr::n_distinct(d2[[group_col]]) < 2) {
-        p <- NA_real_; W <- NA_real_
-      } else {
-        test <- wilcox.test(
-          stats::as.formula(paste(met, "~", group_col)),
-          data = d2,
-          exact = exact_two_sided
-        )
-        p <- unname(test$p.value)
-        W <- unname(test$statistic)
-      }
-      
-      wilcox_rows[[length(wilcox_rows) + 1]] <- tibble::tibble(
-        Measure = m,
-        Metric = met,
-        W = W,
-        p_value = p,
-        n_subjects_total = nrow(d2),
-        n_groups = dplyr::n_distinct(d2[[group_col]])
-      )
-    }
-  }
-  
-  wilcox_tbl <- dplyr::bind_rows(wilcox_rows) %>%
-    dplyr::mutate(Metric = dplyr::recode(Metric,
-                                         sd_subject = "SD",
-                                         range_subject = "Range",
-                                         mssd = "MSSD"))
-  
-  list(subject_metrics = subj_tbl, wilcox_tests = wilcox_tbl)
-}
+#Step 2: Model time-varying variance (heteroscedastic mixed model)
+#make visit variable factor and control group the reference
+RBD_TMT_long_final <- RBD_TMT_long_final %>%
+  mutate(
+    Code = relevel(factor(Code), ref = "Control"),
+    RelativeVisit_f = factor(RelativeVisit)
+  )
 
 
-#Step 2b: run
-TMT_measures <- c("tmt_trailA_reactiontime", "tmt_trailAminustrailB_exefcn_final", "tmt_trailB_reactiontime")
-
-res_var <- calc_subject_variability(
-  long_df   = RBD_TMT_long_all,
-  measures  = TMT_measures,
-  value_col = "Value",
-  exact_two_sided = FALSE
-)
-
-subject_variance_all <- res_var$subject_metrics
-stat_results_all     <- res_var$wilcox_tests
-
-
-#create boxplots
-make_variability_boxplot <- function(subject_tbl, measure_name, plot_title) {
-  subject_tbl %>%
-    dplyr::filter(Measure == measure_name) %>%
-    tidyr::pivot_longer(
-      cols = c(sd_subject, range_subject, mssd),
-      names_to = "Metric",
-      values_to = "Value"
-    ) %>%
-    dplyr::mutate(
-      Metric = dplyr::recode(Metric,
-                             sd_subject = "SD",
-                             range_subject = "Range",
-                             mssd = "MSSD")
-    ) %>%
-    ggplot2::ggplot(ggplot2::aes(x = Code, y = Value, fill = Code)) +
-    ggplot2::geom_boxplot(alpha = 0.5) +
-    ggplot2::facet_wrap(~ Metric, scales = "free_y") +
-    ggplot2::labs(title = plot_title, x = "Group", y = "Value") +
-    ggplot2::theme_minimal(base_size = 14) +
-    ggplot2::theme(legend.position = "none",
-                   strip.text = ggplot2::element_text(face = "bold"),
-                   plot.title = ggplot2::element_text(face = "bold", hjust = 0.5))
-}
-
-p_ART <- make_variability_boxplot(subject_variance_all,
-                                 "tmt_trailA_reactiontime",
-                                 "Within-Subject Variability of TMT-A RT")
-
-p_EF <- make_variability_boxplot(subject_variance_all,
-                                 "tmt_trailAminustrailB_exefcn_final",
-                                 "Within-Subject Variability of Executive Function")
-
-p_BRT <- make_variability_boxplot(subject_variance_all,
-                                 "tmt_trailB_reactiontime",
-                                 "Within-Subject Variability of TMT-B RT")
-
-print(p_ART); print(p_EF); print(p_BRT)
-subject_variance_all %>% count(Measure, n_timepoints)
-
-wilcox_table <- stat_results_all %>%
-  select(Measure, Metric, p_value) %>%
-  tidyr::pivot_wider(names_from = Metric, values_from = p_value)
-
-wilcox_table
-
-
-#Step 3:	Model time-varying variance (heteroscedastic mixed model)
-#Filter Trail A RT scores
-taRT_data <- RBD_TMT_long_all %>% 
+# Filter TMT-A scores
+TMTA_data <- RBD_TMT_long_final %>% 
   filter(Measure == "tmt_trailA_reactiontime")
-#make relative visit a factor 
-taRT_data <- taRT_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
 
 
-#Homoscedastic LME (residual variance constant)
-lme_hom <- nlme::lme(
-  Value ~ Code * RelativeVisit + age_session_baseline + gender,
+# Visit-specific variance model
+m_visit_TMTA <- nlme::lme(
+  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender,
   random = ~ 1 | PID2,
-  data = taRT_data,
-  na.action = na.exclude
-)
-
-# Visit-specific residual variance
-lme_varident <- update(
-  lme_hom,
+  data = TMTA_data,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom, lme_varident)
+#variance by visit and group (add one variance term for group)
+m_group_TMTA <- update(
+  m_visit_TMTA,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
+)
 
-summary(lme_hom)
+anova(m_visit_TMTA, m_group_TMTA) #does variance differ between groups?
+
+#direction of size and difference (95% CI & variance ratio)
+ci_TMTA <- intervals(m_group_TMTA, which = "var-cov")$varStruct
+ci_TMTA # standard deviation ratio, cases vs controls, with 95% CI
+ci_TMTA^2 # variance ratio, cases vs controls, with 95% CI
+
+# Group row is B.Control (Control relative to iRBD), so invert to get iRBD vs Control
+sd_ratio_TMTA <- 1 / ci_TMTA["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_TMTA) <- c("lower", "est.", "upper")
+sd_ratio_TMTA      # SD ratio, iRBD vs Control
+sd_ratio_TMTA^2    # variance ratio, iRBD vs Control
+
+
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for TMTA
+TMTA_data$resid_fixed <- TMTA_data$Value_for_analysis -
+  fitted(m_visit_TMTA, level = 0)
+
+# calculate residual-based MSSD for each participant
+mssd_TMTA <- TMTA_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_TMTA, exact = FALSE)
+
+
+mssd_TMTA %>% count(Code, is.na(mssd))
+
+
+# participants per group at each visit
+table(TMTA_data$Code[!is.na(TMTA_data$Value_for_analysis)],
+      TMTA_data$RelativeVisit)
 
 
 
-# Filter Trail B RT scores
-tbRT_data <- RBD_TMT_long_all %>% 
+
+#TMT-B reaction time
+unique(RBD_TMT_long_final$Measure)
+TMTB_data <- RBD_TMT_long_final %>% 
   filter(Measure == "tmt_trailB_reactiontime")
-#make relative visit a factor 
-tbRT_data <- tbRT_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
 
 
-#Homoscedastic LME (residual variance constant)
-lme_hom_bRT <- nlme::lme(
-  Value ~ Code * RelativeVisit + age_session_baseline + gender,
+# Visit-specific variance model
+m_visit_TMTB <- nlme::lme(
+  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender,
   random = ~ 1 | PID2,
-  data = tbRT_data,
-  na.action = na.exclude
-)
-
-# Visit-specific residual variance
-lme_varident_bRT <- update(
-  lme_hom_bRT,
+  data = TMTB_data,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom_bRT, lme_varident_bRT)
-
-summary(lme_varident_bRT)
-
-
-
-# Filter EF scores
-EF_data <- RBD_TMT_long_all %>% 
-  filter(Measure == "tmt_trailAminustrailB_exefcn_final")
-#make relative visit a factor 
-EF_data <- EF_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
-
-
-#Homoscedastic LME (residual variance constant)
-lme_hom_EF <- nlme::lme(
-  Value ~ Code * RelativeVisit + age_session_baseline + gender,
-  random = ~ 1 | PID2,
-  data = EF_data,
-  na.action = na.exclude
+#variance by visit and group (add one variance term for group)
+m_group_TMTB <- update(
+  m_visit_TMTB,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
 )
 
-# Visit-specific residual variance
-lme_varident_EF <- update(
-  lme_hom_EF,
+anova(m_visit_TMTB, m_group_TMTB) #does variance differ between groups?
+
+#direction of size and difference (95% CI & variance ratio)
+ci_TMTB <- intervals(m_group_TMTB, which = "var-cov")$varStruct
+ci_TMTB # standard deviation ratio, cases vs controls, with 95% CI
+ci_TMTB^2 # variance ratio, cases vs controls, with 95% CI
+
+sd_ratio_TMTB <- 1 / ci_TMTB["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_TMTB) <- c("lower", "est.", "upper")
+sd_ratio_TMTB      # SD ratio, iRBD vs Control
+sd_ratio_TMTB^2    # variance ratio, iRBD vs Control
+
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for TMTB
+TMTB_data$resid_fixed <- TMTB_data$Value_for_analysis -
+  fitted(m_visit_TMTB, level = 0)
+
+# calculate residual-based MSSD for each participant
+mssd_TMTB <- TMTB_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_TMTB, exact = FALSE)
+
+
+mssd_TMTB %>% count(Code, is.na(mssd))
+
+
+# participants per group at each visit
+table(TMTB_data$Code[!is.na(TMTB_data$Value_for_analysis)],
+      TMTB_data$RelativeVisit)
+
+
+
+# Executive Function
+unique(RBD_TMT_long_final$Measure)
+TMTEF_data <- RBD_TMT_long_final %>% 
+  filter(Measure == "TMT_EF_log")
+
+
+# Visit-specific variance model
+m_visit_TMTEF <- nlme::lme(
+  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender,
+  random = ~ 1 | PID2,
+  data = TMTEF_data,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom_EF, lme_varident_EF)
+#variance by visit and group (add one variance term for group)
+m_group_TMTEF <- update(
+  m_visit_TMTEF,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
+)
 
-summary(lme_varident_EF)
+anova(m_visit_TMTEF, m_group_TMTEF) #does variance differ between groups?
+
+#direction of size and difference (95% CI & variance ratio)
+ci_EF <- intervals(m_group_TMTEF, which = "var-cov")$varStruct
+ci_EF # standard deviation ratio, cases vs controls, with 95% CI
+ci_EF^2 # variance ratio, cases vs controls, with 95% CI
+
+sd_ratio_EF <- 1 / ci_EF["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_EF) <- c("lower", "est.", "upper")
+sd_ratio_EF      # SD ratio, iRBD vs Control
+sd_ratio_EF^2    # variance ratio, iRBD vs Control
+
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for EF
+TMTEF_data$resid_fixed <- TMTEF_data$Value_for_analysis -
+  fitted(m_visit_TMTEF, level = 0)
+
+# calculate residual-based MSSD for each participant
+mssd_TMTEF <- TMTEF_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_TMTEF, exact = FALSE)
+
+
+mssd_TMTEF %>% count(Code, is.na(mssd))
+
+
+# participants per group at each visit
+table(TMTEF_data$Code[!is.na(TMTEF_data$Value_for_analysis)],
+      TMTEF_data$RelativeVisit)
+
+
 
 
 ###### demographics ###### 
@@ -643,6 +851,7 @@ RBD_TMT_long_all %>%
 demo_df <- RBD_TMT_long_all %>%
   arrange(PID2, RelativeVisit) %>% 
   distinct(PID2, .keep_all = TRUE)
+
 
 t_test_age_result <- t.test(age_session_baseline ~ Code, data = demo_df)
 print(t_test_age_result)
@@ -663,24 +872,65 @@ chi_test_result_sex <- demo_df %>%
   chisq.test()
 print(chi_test_result_sex)
 
-summary_means <- RBD_TMT_long_all %>%
+
+tmt_skewness <- RBD_TMT_long_qc %>%
+  filter(Measure %in% c(
+    "tmt_trailA_reactiontime",
+    "tmt_trailB_reactiontime",
+    "tmt_trailBminustrailA_exefcn_final"
+  )) %>%
+  filter(!is.na(Value_clean)) %>%
+  group_by(Measure, Code) %>%
+  summarise(
+    skewness = round(skewness(Value_clean), 2),
+    .groups = "drop"
+  )
+
+print(tmt_skewness)
+
+
+summary_means <- RBD_TMT_long_qc %>%
+  filter(Measure %in% c(
+    "tmt_trailA_reactiontime",
+    "tmt_trailB_reactiontime",
+    "tmt_trailBminustrailA_exefcn_final"
+  )) %>%
+  filter(!is.na(Value_clean)) %>%
   group_by(Measure, RelativeVisit) %>%
   summarise(
-    n_control = sum(Code == "Control" & !is.na(Value)),
-    mean_control = mean(Value[Code == "Control"], na.rm = TRUE),
-    sd_control = sd(Value[Code == "Control"], na.rm = TRUE),
-    n_RBD = sum(Code == "iRBD" & !is.na(Value)),
-    mean_RBD = mean(Value[Code == "iRBD"], na.rm = TRUE),
-    sd_RBD = sd(Value[Code == "iRBD"], na.rm = TRUE),
-    p_value = wilcox.test(Value ~ Code, data = pick(everything()), exact = FALSE)$p.value,
+    n_control = sum(Code == "Control"),
+    median_control = median(Value_clean[Code == "Control"]),
+    IQR_control = IQR(Value_clean[Code == "Control"]),
+    
+    n_RBD = sum(Code == "iRBD"),
+    median_RBD = median(Value_clean[Code == "iRBD"]),
+    IQR_RBD = IQR(Value_clean[Code == "iRBD"]),
+    
+    p_value = wilcox.test(
+      Value_clean[Code == "Control"],
+      Value_clean[Code == "iRBD"],
+      exact = FALSE
+    )$p.value,
+    
     .groups = "drop"
   ) %>%
   mutate(
-    control_mean_sd = sprintf("%.2f ± %.2f", mean_control, sd_control),
-    RBD_mean_sd = sprintf("%.2f ± %.2f", mean_RBD, sd_RBD)
+    control_median_IQR = sprintf("%.2f (%.2f)", median_control, IQR_control),
+    RBD_median_IQR = sprintf("%.2f (%.2f)", median_RBD, IQR_RBD)
   ) %>%
-  select(Measure, RelativeVisit, n_control, control_mean_sd,
-         n_RBD, RBD_mean_sd, p_value)
-
+  select(
+    Measure, RelativeVisit,
+    n_control, control_median_IQR,
+    n_RBD, RBD_median_IQR,
+    p_value
+  )
 
 print(summary_means, n = Inf, width = Inf)
+
+
+
+# Close PDF
+dev.off()
+
+# Close console output
+sink()
