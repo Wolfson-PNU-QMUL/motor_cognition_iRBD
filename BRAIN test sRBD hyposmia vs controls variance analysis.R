@@ -17,6 +17,13 @@ library(nlme) # for heteroscedastic LMEs
 library(tidybayes)
 library(moments)
 
+getwd()
+
+sink()
+
+pdf()
+
+#read in dataset
 View(matched_sRBD_hyp_control_BT_data)
 
 table(matched_sRBD_hyp_control_BT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
@@ -50,25 +57,7 @@ matched_sRBD_hyp_control_BT_data2 <- matched_sRBD_hyp_control_BT_data %>%
       ncol(select(., starts_with("braintest_worst")))
   )
 
-# log transform IS
-cols_is <- c("braintest_worst_is_adj_4", "braintest_worst_is_adj_5", "braintest_worst_is_adj_7", 
-             "braintest_worst_is_adj_8")
-
-matched_sRBD_hyp_control_BT_data2 <- matched_sRBD_hyp_control_BT_data2 %>%
-  mutate(
-    across(
-      all_of(cols_is),
-      ~ {
-        x <- readr::parse_number(as.character(.x))
-        if (any(x < 0, na.rm = TRUE)) {
-          warning("Negative values found in IS column; log1p invalid for negatives.")
-        }
-        log1p(x)
-      }
-    )
-  )
-
-
+#save file
 
 ######## Exploratory data analysis #########
 #merge KS and KS_adj
@@ -79,7 +68,7 @@ all(matched_sRBD_hyp_control_BT_data2$braintest_worst_ks_8 ==
       matched_sRBD_hyp_control_BT_data2$braintest_worst_ks_adj_8, 
     na.rm = TRUE)
 
-# List of BRAIN test columns
+# List of your BRAIN test columns
 cols_bt <- c(
   "braintest_worst_at_adj_4", "braintest_worst_at_adj_5", "braintest_worst_at_adj_7", "braintest_worst_at_adj_8",
   "braintest_worst_is_adj_4", "braintest_worst_is_adj_5", "braintest_worst_is_adj_7", "braintest_worst_is_adj_8",
@@ -96,7 +85,6 @@ cols_to_convert <- c( "braintest_worst_at_adj_4", "braintest_worst_at_adj_5", "b
 
 matched_sRBD_hyp_control_BT_data2[cols_to_convert] <- lapply(matched_sRBD_hyp_control_BT_data2[cols_to_convert], as.numeric)
 
-
 #remove participants with ALL brain test data missing 
 matched_sRBD_hyp_control_BT_data2 <- matched_sRBD_hyp_control_BT_data2 %>%
   filter(
@@ -105,22 +93,19 @@ matched_sRBD_hyp_control_BT_data2 <- matched_sRBD_hyp_control_BT_data2 %>%
   )
 
 
-
 # Pivot to long format but keep all non-brain test columns
 sRBD_hyp_BT_long <- matched_sRBD_hyp_control_BT_data2 %>%
   pivot_longer(
-    cols = all_of(cols_bt),                
+    cols = all_of(cols_bt),                # only pivot brain test columns
     names_to = c("Measure", "Session"),
     names_pattern = "(.*)_(\\d+)$",
     values_to = "Value"
   ) %>%
   mutate(Session = as.numeric(Session)) %>%
-  group_by(PID2, Measure) %>%            
+  group_by(PID2, Measure) %>%             # define per-participant & per-measure
   arrange(PID2, Measure, Session) %>%
   mutate(RelativeVisit = row_number()) %>% # baseline = 1, next = 2, etc.
   ungroup()
-
-
 
 # check how many timepoints
 sRBD_hyp_BT_long %>%
@@ -129,14 +114,13 @@ sRBD_hyp_BT_long %>%
   count(Measure, n)
 
 sRBD_hyp_BT_long %>%
-  filter(!is.na(Value)) %>%                       
+  filter(!is.na(Value)) %>%                       # only observed values
   group_by(Measure, PID2) %>%
-  summarise(n_obs = n(), .groups = "drop") %>%    
-  filter(n_obs == 4) %>%                        
+  summarise(n_obs = n(), .groups = "drop") %>%    # number of observed timepoints
+  filter(n_obs == 4) %>%                          # complete 4
   count(Measure, name = "n_IDs_complete_4tp")
 
-
-#Variability-eligible dataset
+#Variability-eligible dataset (maximising sample)
 sRBD_hyp_BT_long_all <- sRBD_hyp_BT_long %>%
   filter(!is.na(Value)) %>%
   group_by(PID2, Code, Measure) %>%
@@ -149,8 +133,6 @@ sRBD_hyp_BT_long_all %>%
   group_by(Measure, PID2) %>%
   summarise(n = n(), .groups = "drop") %>%
   count(Measure, n)
-
-
 
 # Raincloud plot
 # Horizontal raincloud plots per visit
@@ -181,7 +163,6 @@ for (v in visits) {
   print(p)
 }
 
-
 #check for outliers
 sRBD_hyp_BT_flagged <- sRBD_hyp_BT_long_all %>%
   group_by(Code, Measure, RelativeVisit) %>%
@@ -195,7 +176,7 @@ sRBD_hyp_BT_flagged <- sRBD_hyp_BT_long_all %>%
   ) %>%
   ungroup()
 
-# Flag outliers and create summary table
+# Flag outliers and create summary table in one go
 outlier_counts <- sRBD_hyp_BT_flagged %>%
   group_by(Code, Measure, RelativeVisit) %>%
   mutate(
@@ -216,7 +197,6 @@ outlier_counts <- sRBD_hyp_BT_flagged %>%
 
 outlier_counts
 
-
 # Identify outliers by Code, measure, and year
 outlier_data <- sRBD_hyp_BT_flagged %>%
   group_by(Code, Measure, RelativeVisit) %>%
@@ -229,7 +209,6 @@ outlier_data <- sRBD_hyp_BT_flagged %>%
     is_outlier = Value < Lower | Value > Upper
   ) %>%
   ungroup()
-
 
 # Boxplot highlighting outliers
 ggplot(outlier_data, aes(x = factor(RelativeVisit), y = Value, fill = Code)) +
@@ -249,9 +228,7 @@ ggplot(outlier_data, aes(x = factor(RelativeVisit), y = Value, fill = Code)) +
     panel.grid.minor = element_blank()
   )
 
-
-
-#create caps for BRAIN test parameters:
+#create caps for BRAIN test parameters and log-transform:
 apply_bt_qc_and_transform <- function(sRBD_hyp_BT_long_all,
                                       measure_col = "Measure",
                                       value_col   = "Value",
@@ -259,21 +236,26 @@ apply_bt_qc_and_transform <- function(sRBD_hyp_BT_long_all,
                                       log_at      = TRUE) {
   sRBD_hyp_BT_long_all %>%
     mutate(
+      # ensure numeric (safe-ish; if you have messy strings use parse_number here)
       Value_num = suppressWarnings(as.numeric(.data[[value_col]])),
       
       qc_flag = case_when(
+        # KS plausibility rule (from your LR code)
         .data[[measure_col]] == "braintest_worst_ks" &
           (Value_num < 15 | Value_num > 110) ~ "invalid_KS",
         
+        # AT must be positive if you ever log-transform
         .data[[measure_col]] == "braintest_worst_at_adj" &
           (is.na(Value_num) | Value_num <= 0) ~ "invalid_AT_nonpositive",
         
+        # If you believe there is a true ceiling (timeout), cap it (flag it either way)
         .data[[measure_col]] == "braintest_worst_at_adj" &
           (Value_num > at_ceiling) ~ "AT_capped_ceiling",
         
         TRUE ~ "ok"
       ),
       
+      # Cleaned value on the ORIGINAL scale
       Value_clean = case_when(
         qc_flag == "invalid_KS" ~ NA_real_,
         qc_flag == "invalid_AT_nonpositive" ~ NA_real_,
@@ -281,19 +263,39 @@ apply_bt_qc_and_transform <- function(sRBD_hyp_BT_long_all,
         TRUE ~ Value_num
       ),
       
+      # Log-transform after QC
       Value_clean_log = case_when(
-        log_at & .data[[measure_col]] == "braintest_worst_at_adj" &
+        .data[[measure_col]] == "braintest_worst_at_adj" &
           !is.na(Value_clean) ~ log(Value_clean),
-        TRUE ~ Value_clean
+        
+        .data[[measure_col]] == "braintest_worst_is_adj" &
+          !is.na(Value_clean) ~ log1p(Value_clean),
+        
+        .data[[measure_col]] == "braintest_worst_ks" &
+          !is.na(Value_clean) ~ log(Value_clean),
+        
+        TRUE ~ NA_real_
       )
     )
 }
 
 sRBD_hyp_BT_long_qc <- apply_bt_qc_and_transform(sRBD_hyp_BT_long_all, log_at = TRUE)
 
+#check transformation worked
+sRBD_hyp_BT_long_qc %>%
+  group_by(Measure) %>%
+  summarise(
+    n_valid = sum(!is.na(Value_clean_log)),
+    min_value = min(Value_clean_log, na.rm = TRUE),
+    max_value = max(Value_clean_log, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+sRBD_hyp_BT_long_qc %>%
+  count(Measure, qc_flag)
+
 sRBD_hyp_BT_long_qc <- sRBD_hyp_BT_long_qc %>%
   mutate(RelativeVisit = as.numeric(RelativeVisit))
-
 
 #check if data is normally distributed 
 ggplot(sRBD_hyp_BT_long_qc %>% filter(Measure == "braintest_worst_is_adj"), 
@@ -308,7 +310,6 @@ ggplot(sRBD_hyp_BT_long_qc %>% filter(Measure == "braintest_worst_is_adj"),
   xlim(-3,15) +
   theme_minimal(base_size = 14)
 
-
 ggplot(sRBD_hyp_BT_long_qc %>% filter(Measure == "braintest_worst_ks"), 
        aes(x = Value, fill = Code)) +
   geom_density(alpha = 0.4) +
@@ -320,7 +321,6 @@ ggplot(sRBD_hyp_BT_long_qc %>% filter(Measure == "braintest_worst_ks"),
   ) +
   xlim(-20,110) +
   theme_minimal(base_size = 14)
-
 
 ggplot(sRBD_hyp_BT_long_qc %>% filter(Measure == "braintest_worst_at_adj"), 
        aes(x = Value, fill = Code)) +
@@ -334,15 +334,12 @@ ggplot(sRBD_hyp_BT_long_qc %>% filter(Measure == "braintest_worst_at_adj"),
   xlim(-50,250) +
   theme_minimal(base_size = 14)
 
-
 sRBD_hyp_BT_long_qc %>%
   group_by(Measure) %>%
   summarise(
     p_value = shapiro.test(Value)$p.value
   )
 #not normally distributed
-
-
 
 #inspect visually
 # Loop through each measure
@@ -369,7 +366,6 @@ for(m in unique(sRBD_hyp_BT_long_qc$Measure)) {
   )
 }
 
-
 ######### Variance Analysis ######### 
 #Step 1a — Compute mean, SD, and sample size per group × year × measure
 variance_summary <- sRBD_hyp_BT_long_qc %>%
@@ -380,8 +376,8 @@ variance_summary <- sRBD_hyp_BT_long_qc %>%
     sd_value = sd(Value_clean_log, na.rm = TRUE),
     .groups = "drop"
   )
-print(variance_summary)
 
+print(variance_summary)
 
 #Step 1b — Bootstrap SD for confidence intervals (small sample size)
 # Function to compute SD for bootstrapping
@@ -408,9 +404,9 @@ variance_boot <- sRBD_hyp_BT_long_qc %>%
   ) %>%
   unnest(cols = c(boot_results))
 
-variance_boot
+print(variance_boot, n = Inf, width = Inf)
 
-
+#save file
 
 #Step 1c — Plot mean ± SD with bootstrap CI
 # Combine mean and bootstrap SD
@@ -434,9 +430,8 @@ measure_direction <- c(
   "braintest_worst_ks"     = "Lower = worse"
 )
 
-
 plot_data <- plot_data %>%
-  mutate(Code = ifelse(Code == "sRBD_hyposmia", "pRBD with hyposmia", Code))
+  mutate(Code = ifelse(Code == "sRBD_hyposmia", "pRBD + hyposmia", Code))
 
 # Loop through measures and plot with subtitle
 for (m in measures) {
@@ -444,17 +439,18 @@ for (m in measures) {
   p <- plot_data %>%
     filter(Measure == m) %>%
     ggplot(aes(x = RelativeVisit, y = mean_value, color = Code, group = Code, fill = Code)) +
-    geom_line(size = 1) +
-    geom_point(size = 2) +
-    geom_ribbon(aes(ymin = mean_value - sd_lower, ymax = mean_value + sd_upper),
+    geom_ribbon(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value),
                 alpha = 0.2, color = NA) +
+    geom_line(linewidth = 1) +
+    geom_point(size = 2) +
     labs(
       title = paste0("BRAIN test – ", measure_labels[m], " Over Time (Mean ± SD)"),
       subtitle = measure_direction[m],
-      x = "Year",
-      y = "Score",
+      x = "Visit",
+      y = "Mean score (log-transformed)",
       color = "Group",
-      fill = "Group"
+      fill = "Group",
+      caption = "Lines = group mean; shaded area = ±1 SD"
     ) +
     theme_minimal(base_size = 14) +
     theme(
@@ -466,226 +462,214 @@ for (m in measures) {
   print(p)
 }
 
+# Save the combined mean + SD + bootstrap CI
 
+#Step 2: Model time-varying variance (heteroscedastic mixed model)
+#make visit variable factor and control group the reference
+sRBD_hyp_BT_long_qc <- sRBD_hyp_BT_long_qc %>%
+  mutate(
+    Code = relevel(factor(Code), ref = "Control"),
+    RelativeVisit_f = factor(RelativeVisit)
+  )
 
-#Step 2: subject-level variance (“wobblers”) + wilcoxon rank
-calc_subject_variability <- function(long_df,
-                                     measures,
-                                     id_col   = "PID2",
-                                     group_col = "Code",
-                                     time_col = "RelativeVisit",
-                                     value_col = "Value_clean_log",
-                                     exact_two_sided = FALSE) {
-  
-  stopifnot(all(c("Measure", id_col, group_col, time_col, value_col) %in% names(long_df)))
-  stopifnot(all(measures %in% unique(long_df$Measure)))
-  
-  # compute SD, Range, MSSD for one subject 
-  subject_metrics <- function(x) {
-    x <- x[!is.na(x)]
-    if (length(x) == 0) {
-      return(c(n_timepoints = 0, sd_subject = NA_real_, range_subject = NA_real_, mssd = NA_real_))
-    }
-    sdv <- if (length(x) >= 2) sd(x) else NA_real_
-    rgv <- if (length(x) >= 1) max(x) - min(x) else NA_real_
-    msv <- if (length(x) >= 2) mean(diff(x)^2) else NA_real_
-    c(n_timepoints = length(x), sd_subject = sdv, range_subject = rgv, mssd = msv)
-  }
-  
-  subj_tbl <- long_df %>%
-    dplyr::filter(.data$Measure %in% measures) %>%
-    dplyr::arrange(.data[[id_col]], .data$Measure, .data[[time_col]]) %>%
-    dplyr::group_by(.data[[id_col]], .data[[group_col]], .data$Measure) %>%
-    dplyr::summarise(metrics = list(subject_metrics(.data[[value_col]])),
-                     .groups = "drop") %>%
-    tidyr::unnest_wider(metrics)
-  
-  metrics_to_test <- c("sd_subject", "range_subject", "mssd")
-  wilcox_rows <- list()
-  
-  for (m in unique(subj_tbl$Measure)) {
-    dat_m <- subj_tbl %>% dplyr::filter(Measure == m)
-    if (dplyr::n_distinct(dat_m[[group_col]]) < 2) next
-    
-    for (met in metrics_to_test) {
-      d2 <- dat_m %>% dplyr::filter(!is.na(.data[[met]]))
-      
-      if (dplyr::n_distinct(d2[[group_col]]) < 2) {
-        p <- NA_real_; W <- NA_real_
-      } else {
-        test <- wilcox.test(
-          stats::as.formula(paste(met, "~", group_col)),
-          data = d2,
-          exact = exact_two_sided
-        )
-        p <- unname(test$p.value)
-        W <- unname(test$statistic)
-      }
-      
-      wilcox_rows[[length(wilcox_rows) + 1]] <- tibble::tibble(
-        Measure = m,
-        Metric = met,
-        W = W,
-        p_value = p,
-        n_subjects_total = nrow(d2),
-        n_groups = dplyr::n_distinct(d2[[group_col]])
-      )
-    }
-  }
-  
-  wilcox_tbl <- dplyr::bind_rows(wilcox_rows) %>%
-    dplyr::mutate(Metric = dplyr::recode(Metric,
-                                         sd_subject = "SD",
-                                         range_subject = "Range",
-                                         mssd = "MSSD"))
-  
-  list(subject_metrics = subj_tbl, wilcox_tests = wilcox_tbl)
-}
-
-
-
-#Step 2b: run
-brain_measures <- c("braintest_worst_is_adj", "braintest_worst_at_adj", "braintest_worst_ks")
-
-res_var <- calc_subject_variability(
-  long_df   = sRBD_hyp_BT_long_qc,
-  measures  = brain_measures,
-  value_col = "Value_clean_log",  
-  exact_two_sided = FALSE
-)
-
-subject_variance_all <- res_var$subject_metrics
-stat_results_all     <- res_var$wilcox_tests
-
-
-#create boxplots
-make_variability_boxplot <- function(subject_tbl, measure_name, plot_title) {
-  subject_tbl %>%
-    dplyr::filter(Measure == measure_name) %>%
-    tidyr::pivot_longer(
-      cols = c(sd_subject, range_subject, mssd),
-      names_to = "Metric",
-      values_to = "Value"
-    ) %>%
-    dplyr::mutate(
-      Metric = dplyr::recode(Metric,
-                             sd_subject = "SD",
-                             range_subject = "Range",
-                             mssd = "MSSD")
-    ) %>%
-    ggplot2::ggplot(ggplot2::aes(x = Code, y = Value, fill = Code)) +
-    ggplot2::geom_boxplot(alpha = 0.5) +
-    ggplot2::facet_wrap(~ Metric, scales = "free_y") +
-    ggplot2::labs(title = plot_title, x = "Group", y = "Value") +
-    ggplot2::theme_minimal(base_size = 14) +
-    ggplot2::theme(legend.position = "none",
-                   strip.text = ggplot2::element_text(face = "bold"),
-                   plot.title = ggplot2::element_text(face = "bold", hjust = 0.5))
-}
-
-p_IS <- make_variability_boxplot(subject_variance_all,
-                                 "braintest_worst_is_adj",
-                                 "Within-Subject Variability of IS")
-
-p_AT <- make_variability_boxplot(subject_variance_all,
-                                 "braintest_worst_at_adj",
-                                 "Within-Subject Variability of AT (QC + log)")
-
-p_KS <- make_variability_boxplot(subject_variance_all,
-                                 "braintest_worst_ks",
-                                 "Within-Subject Variability of KS")
-
-print(p_IS); print(p_AT); print(p_KS)
-subject_variance_all %>% count(Measure, n_timepoints)
-
-wilcox_table <- stat_results_all %>%
-  select(Measure, Metric, p_value) %>%
-  tidyr::pivot_wider(names_from = Metric, values_from = p_value)
-
-wilcox_table
-
-
-
-#	Model time-varying variance (heteroscedastic mixed model)
 # Filter IS scores
 IS_data <- sRBD_hyp_BT_long_qc %>% 
   filter(Measure == "braintest_worst_is_adj")
-#make relative visit a factor 
-IS_data <- IS_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
 
-
-#Homoscedastic LME (residual variance constant)
-lme_hom <- nlme::lme(
+# Visit-specific variance model
+m_visit_IS <- nlme::lme(
   Value_clean_log ~ Code * RelativeVisit + age_session_baseline + gender,
   random = ~ 1 | PID2,
   data = IS_data,
-  na.action = na.exclude
-)
-
-# Visit-specific residual variance
-lme_varident <- update(
-  lme_hom,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom, lme_varident)
+#variance by visit and group (add one variance term for group)
+m_group_IS <- update(
+  m_visit_IS,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
+)
 
-summary(lme_varident)
+anova(m_visit_IS, m_group_IS) #does variance differ between groups?
 
+#direction of size and difference (95% CI & variance ratio)
+ci_IS <- intervals(m_group_IS, which = "var-cov")$varStruct
+ci_IS   # full table (A.* rows are visit effects, ignore them)
 
+# Group row is B.Control (Control relative to sRBD hyposmia), so invert
+sd_ratio_IS <- 1 / ci_IS["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_IS) <- c("lower", "est.", "upper")
+sd_ratio_IS      # SD ratio, sRBD hyposmia vs Control
+sd_ratio_IS^2    # variance ratio, sRBD hyposmia vs Control
+
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for IS
+IS_data$resid_fixed <- IS_data$Value_clean_log -
+  fitted(m_visit_IS, level = 0)
+
+# calculate residual-based MSSD for each participant
+mssd_IS <- IS_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_IS, exact = FALSE)
+
+mssd_IS %>% count(Code, is.na(mssd))
+
+# participants per group at each visit
+table(
+  IS_data$Code[!is.na(IS_data$Value_clean_log)],
+  IS_data$RelativeVisit[!is.na(IS_data$Value_clean_log)]
+)
+
+## AT
+unique(sRBD_hyp_BT_long_qc$Measure)
 # Filter AT scores
 AT_data <- sRBD_hyp_BT_long_qc %>% 
   filter(Measure == "braintest_worst_at_adj")
-#make relative visit a factor 
-AT_data <- AT_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
 
-#Homoscedastic LME (residual variance constant)
-lme_hom_AT <- nlme::lme(
+# Visit-specific variance model
+m_visit_AT <- nlme::lme(
   Value_clean_log ~ Code * RelativeVisit + age_session_baseline + gender,
   random = ~ 1 | PID2,
   data = AT_data,
-  na.action = na.exclude
-)
-
-# Visit-specific residual variance
-lme_varident_AT <- update(
-  lme_hom_AT,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom_AT, lme_varident_AT)
+#variance by visit and group (add one variance term for group)
+m_group_AT <- update(
+  m_visit_AT,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
+)
 
-summary(lme_varident_AT)
+anova(m_visit_AT, m_group_AT) #does variance differ between groups?
+
+#direction of size and difference (95% CI & variance ratio)
+ci_AT <- intervals(m_group_AT, which = "var-cov")$varStruct
+ci_AT
+
+sd_ratio_AT <- 1 / ci_AT["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_AT) <- c("lower", "est.", "upper")
+sd_ratio_AT      # SD ratio, sRBD hyposmia vs Control
+sd_ratio_AT^2    # variance ratio, sRBD hyposmia vs Control
 
 
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for IS
+AT_data$resid_fixed <- AT_data$Value_clean_log -
+  fitted(m_visit_AT, level = 0)
 
+# calculate residual-based MSSD for each participant
+mssd_AT <- AT_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_AT, exact = FALSE)
+
+mssd_AT %>% count(Code, is.na(mssd))
+
+# participants per group at each visit
+table(
+  AT_data$Code[!is.na(AT_data$Value_clean_log)],
+  AT_data$RelativeVisit[!is.na(AT_data$Value_clean_log)]
+)
+
+## KS
+unique(sRBD_hyp_BT_long_qc$Measure)
 # Filter KS scores
 KS_data <- sRBD_hyp_BT_long_qc %>% 
   filter(Measure == "braintest_worst_ks")
-#make relative visit a factor 
-KS_data <- KS_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
 
 
-#Homoscedastic LME (residual variance constant)
-lme_hom_KS <- nlme::lme(
+# Visit-specific variance model
+m_visit_KS <- nlme::lme(
   Value_clean_log ~ Code * RelativeVisit + age_session_baseline + gender,
   random = ~ 1 | PID2,
   data = KS_data,
-  na.action = na.exclude
-)
-
-# Visit-specific residual variance
-lme_varident_KS <- update(
-  lme_hom_KS,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom_KS, lme_varident_KS)
+#variance by visit and group (add one variance term for group)
+m_group_KS <- update(
+  m_visit_KS,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
+)
 
-summary(lme_varident_KS)
+anova(m_visit_KS, m_group_KS) #does variance differ between groups?
+
+#direction of size and difference (95% CI & variance ratio)
+ci_KS <- intervals(m_group_KS, which = "var-cov")$varStruct
+ci_KS
+
+sd_ratio_KS <- 1 / ci_KS["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_KS) <- c("lower", "est.", "upper")
+sd_ratio_KS      # SD ratio, sRBD hyposmia vs Control
+sd_ratio_KS^2    # variance ratio, sRBD hyposmia vs Control
+
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for IS
+KS_data$resid_fixed <- KS_data$Value_clean_log -
+  fitted(m_visit_KS, level = 0)
+
+# calculate residual-based MSSD for each participant
+mssd_KS <- KS_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_KS, exact = FALSE)
+
+mssd_KS %>% count(Code, is.na(mssd))
+
+# participants per group at each visit
+table(
+  KS_data$Code[!is.na(KS_data$Value_clean_log)],
+  KS_data$RelativeVisit[!is.na(KS_data$Value_clean_log)]
+)
 
 
 ###### demographics ###### 
@@ -717,43 +701,58 @@ chi_test_result_sex <- demo_df %>%
   chisq.test()
 print(chi_test_result_sex)
 
-summary_means <- sRBD_hyp_BT_long_qc %>%
-  group_by(Measure, RelativeVisit) %>%
+sRBD_hyp_BT_long_qc %>%
+  filter(!is.na(Value_clean)) %>%
+  group_by(Measure, Code) %>%
   summarise(
-    n_control = sum(Code == "Control" & !is.na(Value_clean_log)),
-    n_sRBD     = sum(Code == "sRBD_hyposmia" & !is.na(Value_clean_log)),
-    
-    mean_control = if (first(Measure) == "braintest_worst_is_adj") {
-      median(Value_clean_log[Code == "Control"], na.rm = TRUE)
-    } else {
-      mean(Value_clean_log[Code == "Control"], na.rm = TRUE)
-    },
-    
-    sd_control = sd(Value_clean_log[Code == "Control"], na.rm = TRUE),
-    
-    mean_sRBD = if (first(Measure) == "braintest_worst_is_adj") {
-      median(Value_clean_log[Code == "sRBD_hyposmia"], na.rm = TRUE)
-    } else {
-      mean(Value_clean_log[Code == "sRBD_hyposmia"], na.rm = TRUE)
-    },
-    
-    sd_sRBD = sd(Value_clean_log[Code == "sRBD_hyposmia"], na.rm = TRUE),
-    
-    p_value = wilcox.test(Value_clean_log ~ Code,
-                          data = pick(Value_clean_log, Code),
-                          exact = FALSE)$p.value,
+    skewness = round(skewness(Value_clean), 2),
     .groups = "drop"
   )
 
+summary_means <- sRBD_hyp_BT_long_qc %>%
+  group_by(Measure, RelativeVisit) %>%
+  summarise(
+    n_control = sum(Code == "Control" & !is.na(Value_clean)),
+    n_sRBD = sum(Code == "sRBD_hyposmia" & !is.na(Value_clean)),
+    
+    mean_control = if (first(Measure) == "braintest_worst_is_adj") {
+      median(Value_clean[Code == "Control"], na.rm = TRUE)
+    } else {
+      mean(Value_clean[Code == "Control"], na.rm = TRUE)
+    },
+    
+    sd_control = if (first(Measure) == "braintest_worst_is_adj") {
+      IQR(Value_clean[Code == "Control"], na.rm = TRUE)
+    } else {
+      sd(Value_clean[Code == "Control"], na.rm = TRUE)
+    },
+    
+    mean_sRBD_hyp = if (first(Measure) == "braintest_worst_is_adj") {
+      median(Value_clean[Code == "sRBD_hyposmia"], na.rm = TRUE)
+    } else {
+      mean(Value_clean[Code == "sRBD_hyposmia"], na.rm = TRUE)
+    },
+    
+    sd_sRBD_hyp = if (first(Measure) == "braintest_worst_is_adj") {
+      IQR(Value_clean[Code == "sRBD_hyposmia"], na.rm = TRUE)
+    } else {
+      sd(Value_clean[Code == "sRBD_hyposmia"], na.rm = TRUE)
+    },
+    
+    p_value = wilcox.test(
+      Value_clean ~ Code,
+      data = pick(Value_clean, Code),
+      exact = FALSE
+    )$p.value,
+    
+    .groups = "drop"
+  )
 
 print(as.data.frame(summary_means))
 
+# Close PDF
+dev.off()
 
-
-
-
-
-
-
-
+# Close console output
+sink()
 
