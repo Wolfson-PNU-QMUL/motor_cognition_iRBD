@@ -17,6 +17,13 @@ library(nlme)
 library(tidybayes)
 library(moments)
 
+getwd()
+
+sink()
+
+pdf()
+
+#read in dataset
 View(matched_RBD_control_DFT_data)
 
 table(matched_RBD_control_DFT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
@@ -53,31 +60,10 @@ matched_RBD_control_DFT_data2 <- matched_RBD_control_DFT_data %>%
   )
 
 
-# log transform IS
-cols_is <- c("onefingertaptest_worst_is_5", "onefingertaptest_worst_is_7")
-
-matched_RBD_control_DFT_data2 <- matched_RBD_control_DFT_data2 %>%
-  mutate(
-    across(
-      all_of(cols_is),
-      ~ {
-        x <- readr::parse_number(as.character(.x))
-        if (any(x < 0, na.rm = TRUE)) {
-          warning("Negative values found in IS column; log1p invalid for negatives.")
-        }
-        log1p(x)
-      }
-    )
-  )
-
+#save file
 
 ######## Exploratory data analysis #########
-# List of test columns
-cols_dft <- c(
-  "onefingertaptest_worst_is_5", "onefingertaptest_worst_is_7",
-  "onefingertaptest_worst_ks_5", "onefingertaptest_worst_ks_7", 
-  "onefingertaptest_worst_at_5", "onefingertaptest_worst_at_7")
-
+# List of your BRAIN test columns
 #check columns
 names(matched_RBD_control_DFT_data2)[!sapply(matched_RBD_control_DFT_data2, is.numeric)]
 
@@ -89,7 +75,7 @@ cols_to_convert <- c( "onefingertaptest_worst_is_5", "onefingertaptest_worst_is_
 matched_RBD_control_DFT_data2[cols_to_convert] <- lapply(matched_RBD_control_DFT_data2[cols_to_convert], as.numeric)
 
 
-#remove participants with ALL test data missing 
+#remove participants with ALL brain test data missing 
 matched_RBD_control_DFT_data2 <- matched_RBD_control_DFT_data2 %>%
   filter(
     rowSums(is.na(select(., starts_with("onefingertaptest_worst")))) <
@@ -97,10 +83,10 @@ matched_RBD_control_DFT_data2 <- matched_RBD_control_DFT_data2 %>%
   )
 
 
-# Pivot to long format but keep all non test columns
+# Pivot to long format but keep all non-brain test columns
 RBD_DFT_long <- matched_RBD_control_DFT_data2 %>%
   pivot_longer(
-    cols = all_of(cols_dft),                # only pivot DFT columns
+    cols = all_of(dft_cols),                # only pivot DFT columns
     names_to = c("Measure", "Session"),
     names_pattern = "(.*)_(\\d+)$",
     values_to = "Value"
@@ -246,6 +232,73 @@ RBD_DFT_long_2tp <- RBD_DFT_long_2tp %>%
   mutate(RelativeVisit = as.numeric(RelativeVisit))
 
 
+#check IS values
+RBD_DFT_long_2tp %>%
+  filter(Measure == "onefingertaptest_worst_is") %>%
+  summarise(
+    min_IS = min(Value, na.rm = TRUE),
+    n_negative = sum(Value < 0, na.rm = TRUE),
+    n_zero = sum(Value == 0, na.rm = TRUE)
+  )
+
+RBD_DFT_long_2tp %>%
+  group_by(Measure) %>%
+  summarise(
+    min_value = min(Value, na.rm = TRUE),
+    n_negative = sum(Value < 0, na.rm = TRUE),
+    n_zero = sum(Value == 0, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+
+#log transform
+apply_dft_qc_and_transform <- function(RBD_DFT_long_2tp,
+                                       measure_col = "Measure",
+                                       value_col = "Value") {
+  RBD_DFT_long_2tp %>%
+    mutate(
+      Value_num = suppressWarnings(as.numeric(.data[[value_col]])),
+      
+      qc_flag = case_when(
+        is.na(Value_num) ~ "missing",
+        Value_num <= 0 ~ "invalid_nonpositive",
+        TRUE ~ "ok"
+      ),
+      
+      Value_clean = case_when(
+        qc_flag == "invalid_nonpositive" ~ NA_real_,
+        TRUE ~ Value_num
+      ),
+      
+      Value_clean_log = if_else(
+        !is.na(Value_clean),
+        log(Value_clean),
+        NA_real_
+      )
+    )
+}
+
+RBD_DFT_long_qc <- apply_dft_qc_and_transform(RBD_DFT_long_2tp)
+
+#check transformation worked
+RBD_DFT_long_qc %>%
+  group_by(Measure) %>%
+  summarise(
+    n_valid = sum(!is.na(Value_clean_log)),
+    min_value = min(Value_clean_log, na.rm = TRUE),
+    max_value = max(Value_clean_log, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+RBD_DFT_long_qc %>%
+  count(Measure, qc_flag)
+
+RBD_DFT_long_qc <- RBD_DFT_long_qc %>%
+  mutate(RelativeVisit = as.numeric(RelativeVisit))
+
+
+
+
 #check if data is normally distributed 
 ggplot(RBD_DFT_long_2tp %>% filter(Measure == "onefingertaptest_worst_is"), 
        aes(x = Value, fill = Code)) +
@@ -269,7 +322,7 @@ ggplot(RBD_DFT_long_2tp %>% filter(Measure == "onefingertaptest_worst_ks"),
     y = "Density",
     fill = "Group"
   ) +
-  xlim(0,150) +
+  xlim(-25,150) +
   theme_minimal(base_size = 14)
 
 ggplot(RBD_DFT_long_2tp %>% filter(Measure == "onefingertaptest_worst_at"), 
@@ -281,7 +334,7 @@ ggplot(RBD_DFT_long_2tp %>% filter(Measure == "onefingertaptest_worst_at"),
     y = "Density",
     fill = "Group"
   ) +
-  xlim(-0,300) +
+  xlim(-10,300) +
   theme_minimal(base_size = 14)
 
 RBD_DFT_long_2tp %>%
@@ -318,23 +371,11 @@ for(m in unique(RBD_DFT_long_2tp$Measure)) {
   )
 }
 
-#AT is skewed
-# log transform AT
-RBD_DFT_long_2tp <- RBD_DFT_long_2tp %>%
-  mutate(
-    Value_num = suppressWarnings(as.numeric(Value)),
-    Value_clean_log = case_when(
-      Measure == "onefingertaptest_worst_at" & !is.na(Value_num) & Value_num > 0 ~ log1p(Value_num),
-      Measure == "onefingertaptest_worst_at" ~ NA_real_,   # AT <= 0 becomes NA
-      TRUE ~ Value_num
-    )
-  )
-
 
 
 ######### Variance Analysis ######### 
 #Step 1a — Compute mean, SD, and sample size per group × year × measure
-variance_summary <- RBD_DFT_long_2tp %>%
+variance_summary <- RBD_DFT_long_qc %>%
   group_by(Measure, RelativeVisit, Code) %>%
   summarise(
     n = sum(!is.na(Value_clean_log)),
@@ -344,7 +385,6 @@ variance_summary <- RBD_DFT_long_2tp %>%
   )
 
 print(variance_summary)
-
 
 #Step 1b — Bootstrap SD for confidence intervals (small sample size)
 # Function to compute SD for bootstrapping
@@ -362,7 +402,7 @@ bootstrap_sd_ci <- function(x, R = 1000, conf = 0.95) {
 }
 
 # Apply to all groups
-variance_boot <- RBD_DFT_long_2tp %>%
+variance_boot <- RBD_DFT_long_qc %>%
   group_by(Measure, RelativeVisit, Code) %>%
   summarise(
     n = sum(!is.na(Value_clean_log)),
@@ -373,6 +413,7 @@ variance_boot <- RBD_DFT_long_2tp %>%
 
 print(variance_boot, n = Inf, width = Inf)
 
+#save file
 
 #Step 1c — Plot mean ± SD with bootstrap CI
 # Combine mean and bootstrap SD
@@ -394,9 +435,8 @@ measure_labels <- c(
 measure_direction <- c(
   "onefingertaptest_worst_is" = "Higher = worse",
   "onefingertaptest_worst_at" = "Higher = worse",
-  "onefingertaptest_worst_ks" = "Lower = worse"
+  "onefingertaptest_worst_ks"     = "Lower = worse"
 )
-
 
 plot_data <- plot_data %>%
   mutate(Code = ifelse(Code == "iRBD", "PSG-iRBD", Code))
@@ -407,17 +447,18 @@ for (m in measures) {
   p <- plot_data %>%
     filter(Measure == m) %>%
     ggplot(aes(x = RelativeVisit, y = mean_value, color = Code, group = Code, fill = Code)) +
-    geom_line(size = 1) +
-    geom_point(size = 2) +
-    geom_ribbon(aes(ymin = mean_value - sd_lower, ymax = mean_value + sd_upper),
+    geom_ribbon(aes(ymin = mean_value - sd_value, ymax = mean_value + sd_value),
                 alpha = 0.2, color = NA) +
+    geom_line(linewidth = 1) +
+    geom_point(size = 2) +
     labs(
       title = paste0("DFT – ", measure_labels[m], " Over Time (Mean ± SD)"),
       subtitle = measure_direction[m],
-      x = "Year",
-      y = "Score",
+      x = "Visit",
+      y = "Mean score (log-transformed)",
       color = "Group",
-      fill = "Group"
+      fill = "Group",
+      caption = "Lines = group mean; shaded area = ±1 SD"
     ) +
     theme_minimal(base_size = 14) +
     theme(
@@ -429,224 +470,234 @@ for (m in measures) {
   print(p)
 }
 
+# Save the combined mean + SD + bootstrap CI
 
-#Step 2: subject-level variance (“wobblers”) + wilcoxon rank
-calc_subject_variability <- function(long_df,
-                                     measures,
-                                     id_col   = "PID2",
-                                     group_col = "Code",
-                                     time_col = "RelativeVisit",
-                                     value_col = "Value_clean_log",
-                                     exact_two_sided = FALSE) {
-  
-  stopifnot(all(c("Measure", id_col, group_col, time_col, value_col) %in% names(long_df)))
-  stopifnot(all(measures %in% unique(long_df$Measure)))
-  
-  # compute SD, Range, MSSD for one subject (already ordered by time)
-  subject_metrics <- function(x) {
-    x <- x[!is.na(x)]
-    if (length(x) == 0) {
-      return(c(n_timepoints = 0, sd_subject = NA_real_, range_subject = NA_real_, mssd = NA_real_))
-    }
-    sdv <- if (length(x) >= 2) sd(x) else NA_real_
-    rgv <- if (length(x) >= 1) max(x) - min(x) else NA_real_
-    msv <- if (length(x) >= 2) mean(diff(x)^2) else NA_real_
-    c(n_timepoints = length(x), sd_subject = sdv, range_subject = rgv, mssd = msv)
-  }
-  
-  # One row per participant × measure with SD, Range, MSSD
-  subj_tbl <- long_df %>%
-    dplyr::filter(.data$Measure %in% measures) %>%
-    dplyr::arrange(.data[[id_col]], .data$Measure, .data[[time_col]]) %>%
-    dplyr::group_by(.data[[id_col]], .data[[group_col]], .data$Measure) %>%
-    dplyr::summarise(metrics = list(subject_metrics(.data[[value_col]])),
-                     .groups = "drop") %>%
-    tidyr::unnest_wider(metrics)
-  
-  #Wilcoxon tests for SD, Range, MSSD per measure
-  metrics_to_test <- c("sd_subject", "range_subject", "mssd")
-  wilcox_rows <- list()
-  
-  for (m in unique(subj_tbl$Measure)) {
-    dat_m <- subj_tbl %>% dplyr::filter(Measure == m)
-    if (dplyr::n_distinct(dat_m[[group_col]]) < 2) next
-    
-    for (met in metrics_to_test) {
-      d2 <- dat_m %>% dplyr::filter(!is.na(.data[[met]]))
-      
-      if (dplyr::n_distinct(d2[[group_col]]) < 2) {
-        p <- NA_real_; W <- NA_real_
-      } else {
-        test <- wilcox.test(
-          stats::as.formula(paste(met, "~", group_col)),
-          data = d2,
-          exact = exact_two_sided
-        )
-        p <- unname(test$p.value)
-        W <- unname(test$statistic)
-      }
-      
-      wilcox_rows[[length(wilcox_rows) + 1]] <- tibble::tibble(
-        Measure = m,
-        Metric = met,
-        W = W,
-        p_value = p,
-        n_subjects_total = nrow(d2),
-        n_groups = dplyr::n_distinct(d2[[group_col]])
-      )
-    }
-  }
-  
-  wilcox_tbl <- dplyr::bind_rows(wilcox_rows) %>%
-    dplyr::mutate(Metric = dplyr::recode(Metric,
-                                         sd_subject = "SD",
-                                         range_subject = "Range",
-                                         mssd = "MSSD"))
-  
-  list(subject_metrics = subj_tbl, wilcox_tests = wilcox_tbl)
-}
+#Step 2: Model time-varying variance (heteroscedastic mixed model)
+#make visit variable factor and control group the reference
+RBD_DFT_long_qc <- RBD_DFT_long_qc %>%
+  mutate(
+    Code = relevel(factor(Code), ref = "Control"),
+    RelativeVisit_f = factor(RelativeVisit)
+  )
 
-
-#Step 2b: run
-DFT_measures <- c("onefingertaptest_worst_is", "onefingertaptest_worst_at", "onefingertaptest_worst_ks")
-
-res_var <- calc_subject_variability(
-  long_df   = RBD_DFT_long_2tp,
-  measures  = DFT_measures,
-  value_col = "Value_clean_log",
-  exact_two_sided = FALSE
-)
-
-subject_variance_all <- res_var$subject_metrics
-stat_results_all     <- res_var$wilcox_tests
-
-
-#create boxplots
-make_variability_boxplot <- function(subject_tbl, measure_name, plot_title) {
-  subject_tbl %>%
-    dplyr::filter(Measure == measure_name) %>%
-    tidyr::pivot_longer(
-      cols = c(sd_subject, range_subject, mssd),
-      names_to = "Metric",
-      values_to = "Value_clean_log"
-    ) %>%
-    dplyr::mutate(
-      Metric = dplyr::recode(Metric,
-                             sd_subject = "SD",
-                             range_subject = "Range",
-                             mssd = "MSSD")
-    ) %>%
-    ggplot2::ggplot(ggplot2::aes(x = Code, y = Value_clean_log, fill = Code)) +
-    ggplot2::geom_boxplot(alpha = 0.5) +
-    ggplot2::facet_wrap(~ Metric, scales = "free_y") +
-    ggplot2::labs(title = plot_title, x = "Group", y = "Value") +
-    ggplot2::theme_minimal(base_size = 14) +
-    ggplot2::theme(legend.position = "none",
-                   strip.text = ggplot2::element_text(face = "bold"),
-                   plot.title = ggplot2::element_text(face = "bold", hjust = 0.5))
-}
-
-p_IS <- make_variability_boxplot(subject_variance_all,
-                                 "onefingertaptest_worst_is",
-                                 "Within-Subject Variability of IS")
-
-p_AT <- make_variability_boxplot(subject_variance_all,
-                                 "onefingertaptest_worst_at",
-                                 "Within-Subject Variability of AT")
-
-p_KS <- make_variability_boxplot(subject_variance_all,
-                                 "onefingertaptest_worst_ks",
-                                 "Within-Subject Variability of KS")
-
-print(p_IS); print(p_AT); print(p_KS)
-subject_variance_all %>% count(Measure, n_timepoints)
-
-wilcox_table <- stat_results_all %>%
-  select(Measure, Metric, p_value) %>%
-  tidyr::pivot_wider(names_from = Metric, values_from = p_value)
-
-wilcox_table
-
-
-#Step 3:	Model time-varying variance (heteroscedastic mixed model)
 # Filter IS scores
-IS_data <- RBD_DFT_long_2tp %>% 
+IS_data <- RBD_DFT_long_qc %>% 
   filter(Measure == "onefingertaptest_worst_is")
-#make relative visit a factor 
-IS_data <- IS_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
 
-#Homoscedastic LME (residual variance constant)
-lme_hom <- nlme::lme(
+
+# Visit-specific variance model
+m_visit_IS <- nlme::lme(
   Value_clean_log ~ Code * RelativeVisit + age_session_baseline + gender,
   random = ~ 1 | PID2,
   data = IS_data,
-  na.action = na.exclude
-)
-
-# Visit-specific residual variance
-lme_varident <- update(
-  lme_hom,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom, lme_varident)
 
-summary(lme_hom)
+#variance by visit and group (add one variance term for group)
+m_group_IS <- update(
+  m_visit_IS,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
+)
+
+anova(m_visit_IS, m_group_IS) #does variance differ between groups?
+
+#direction of size and difference (95% CI & variance ratio)
+ci_IS <- intervals(m_group_IS, which = "var-cov")$varStruct
+ci_IS   # A.2 is the visit effect, ignore it
+
+# Group row is B.Control (Control relative to iRBD), so invert to get iRBD vs Control
+sd_ratio_IS <- 1 / ci_IS["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_IS) <- c("lower", "est.", "upper")
+sd_ratio_IS      # SD ratio, iRBD vs Control
+sd_ratio_IS^2    # variance ratio, iRBD vs Control
 
 
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for IS
+IS_data$resid_fixed <- IS_data$Value_clean_log -
+  fitted(m_visit_IS, level = 0)
+
+# calculate residual-based MSSD for each participant
+mssd_IS <- IS_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_IS, exact = FALSE)
+
+
+mssd_IS %>% count(Code, is.na(mssd))
+
+
+# participants per group at each visit
+table(
+  IS_data$Code[!is.na(IS_data$Value_clean_log)],
+  IS_data$RelativeVisit[!is.na(IS_data$Value_clean_log)]
+)
+
+
+
+## AT
+unique(RBD_DFT_long_qc$Measure)
 # Filter AT scores
-AT_data <- RBD_DFT_long_2tp %>% 
+AT_data <- RBD_DFT_long_qc %>% 
   filter(Measure == "onefingertaptest_worst_at")
-#make relative visit a factor 
-AT_data <- AT_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
 
 
-#Homoscedastic LME (residual variance constant)
-lme_hom_AT <- nlme::lme(
+# Visit-specific variance model
+m_visit_AT <- nlme::lme(
   Value_clean_log ~ Code * RelativeVisit + age_session_baseline + gender,
   random = ~ 1 | PID2,
   data = AT_data,
-  na.action = na.exclude
-)
-
-# Visit-specific residual variance
-lme_varident_AT <- update(
-  lme_hom_AT,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom_AT, lme_varident_AT)
 
-summary(lme_hom_AT)
+#variance by visit and group (add one variance term for group)
+m_group_AT <- update(
+  m_visit_AT,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
+)
+
+anova(m_visit_AT, m_group_AT) #does variance differ between groups?
+
+#direction of size and difference (95% CI & variance ratio)
+ci_AT <- intervals(m_group_AT, which = "var-cov")$varStruct
+ci_AT
+
+sd_ratio_AT <- 1 / ci_AT["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_AT) <- c("lower", "est.", "upper")
+sd_ratio_AT      # SD ratio, iRBD vs Control
+sd_ratio_AT^2    # variance ratio, iRBD vs Control
 
 
-# Filter KS scores
-KS_data <- RBD_DFT_long_2tp %>% 
+
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for IS
+AT_data$resid_fixed <- AT_data$Value_clean_log -
+  fitted(m_visit_AT, level = 0)
+
+# calculate residual-based MSSD for each participant
+mssd_AT <- AT_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_AT, exact = FALSE)
+
+
+mssd_AT %>% count(Code, is.na(mssd))
+
+
+# participants per group at each visit
+table(
+  AT_data$Code[!is.na(AT_data$Value_clean_log)],
+  AT_data$RelativeVisit[!is.na(AT_data$Value_clean_log)]
+)
+
+
+
+## KS
+unique(RBD_DFT_long_qc$Measure)
+# Filter AT scores
+KS_data <- RBD_DFT_long_qc %>% 
   filter(Measure == "onefingertaptest_worst_ks")
-#make relative visit a factor 
-KS_data <- KS_data %>%
-  mutate(RelativeVisit_f = factor(RelativeVisit))
 
 
-#Homoscedastic LME (residual variance constant)
-lme_hom_KS <- nlme::lme(
+# Visit-specific variance model
+m_visit_KS <- nlme::lme(
   Value_clean_log ~ Code * RelativeVisit + age_session_baseline + gender,
   random = ~ 1 | PID2,
   data = KS_data,
-  na.action = na.exclude
-)
-
-# Visit-specific residual variance
-lme_varident_KS <- update(
-  lme_hom_KS,
+  na.action = na.exclude,
   weights = nlme::varIdent(form = ~ 1 | RelativeVisit_f)
 )
 
-anova(lme_hom_KS, lme_varident_KS)
 
-summary(lme_hom_KS)
+#variance by visit and group (add one variance term for group)
+m_group_KS <- update(
+  m_visit_KS,
+  weights = nlme::varComb(
+    nlme::varIdent(form = ~ 1 | RelativeVisit_f),
+    nlme::varIdent(form = ~ 1 | Code)
+  )
+)
+
+anova(m_visit_KS, m_group_KS) #does variance differ between groups?
+
+#direction of size and difference (95% CI & variance ratio)
+ci_KS <- intervals(m_group_KS, which = "var-cov")$varStruct
+ci_KS
+
+sd_ratio_KS <- 1 / ci_KS["B.Control", c("upper", "est.", "lower")]
+names(sd_ratio_KS) <- c("lower", "est.", "upper")
+sd_ratio_KS      # SD ratio, iRBD vs Control
+sd_ratio_KS^2    # variance ratio, iRBD vs Control
+
+
+# Step 3: calculate residual-based MSSD
+# Calculate residuals for IS
+KS_data$resid_fixed <- KS_data$Value_clean_log -
+  fitted(m_visit_KS, level = 0)
+
+# calculate residual-based MSSD for each participant
+mssd_KS <- KS_data %>%
+  arrange(PID2, RelativeVisit) %>%
+  group_by(PID2, Code) %>%
+  summarise(
+    n_timepoints = sum(!is.na(resid_fixed)),
+    mssd = if (sum(!is.na(resid_fixed)) >= 2) {
+      mean(diff(resid_fixed[!is.na(resid_fixed)])^2)
+    } else {
+      NA_real_
+    },
+    .groups = "drop"
+  )
+#this calculates differences between consecutive observed visits
+
+# Compare MSSD between groups
+wilcox.test(mssd ~ Code, data = mssd_KS, exact = FALSE)
+
+
+mssd_KS %>% count(Code, is.na(mssd))
+
+
+# participants per group at each visit
+table(
+  KS_data$Code[!is.na(KS_data$Value_clean_log)],
+  KS_data$RelativeVisit[!is.na(KS_data$Value_clean_log)]
+)
+
+
 
 
 ###### demographics ###### 
@@ -673,38 +724,57 @@ sex_percentage <- demo_df %>%
   ungroup()
 print(sex_percentage)
 
-chi_test_result_sex <- demo_df %>%
-  with(table(gender, Code)) %>%
-  chisq.test()
-print(chi_test_result_sex)
+fisher.test(table(demo_df$gender, demo_df$Code))
 
-summary_means <- RBD_DFT_long_2tp %>%
-  group_by(Measure, RelativeVisit) %>%
+RBD_DFT_long_qc %>%
+  filter(!is.na(Value_clean)) %>%
+  group_by(Measure, Code) %>%
   summarise(
-    n_control = sum(Code == "Control" & !is.na(Value_clean_log)),
-    n_RBD     = sum(Code == "iRBD" & !is.na(Value_clean_log)),
-    
-    mean_control = if (first(Measure) == "onefingertaptest_worst_is") {
-      median(Value_clean_log[Code == "Control"], na.rm = TRUE)
-    } else {
-      mean(Value_clean_log[Code == "Control"], na.rm = TRUE)
-    },
-    
-    sd_control = sd(Value_clean_log[Code == "Control"], na.rm = TRUE),
-    
-    mean_RBD = if (first(Measure) == "onefingertaptest_worst_is") {
-      median(Value_clean_log[Code == "iRBD"], na.rm = TRUE)
-    } else {
-      mean(Value_clean_log[Code == "iRBD"], na.rm = TRUE)
-    },
-    
-    sd_RBD = sd(Value_clean_log[Code == "iRBD"], na.rm = TRUE),
-    
-    p_value = wilcox.test(Value_clean_log ~ Code,
-                          data = pick(Value_clean_log, Code),
-                          exact = FALSE)$p.value,
+    skewness = round(skewness(Value_clean), 2),
     .groups = "drop"
   )
 
+summary_means <- RBD_DFT_long_qc %>%
+  group_by(Measure, RelativeVisit) %>%
+  summarise(
+    n_control = sum(Code == "Control" & !is.na(Value_clean)),
+    n_RBD = sum(Code == "iRBD" & !is.na(Value_clean)),
+    
+    median_control = median(
+      Value_clean[Code == "Control"], na.rm = TRUE
+    ),
+    q1_control = quantile(
+      Value_clean[Code == "Control"], 0.25, na.rm = TRUE
+    ),
+    q3_control = quantile(
+      Value_clean[Code == "Control"], 0.75, na.rm = TRUE
+    ),
+    
+    median_RBD = median(
+      Value_clean[Code == "iRBD"], na.rm = TRUE
+    ),
+    q1_RBD = quantile(
+      Value_clean[Code == "iRBD"], 0.25, na.rm = TRUE
+    ),
+    q3_RBD = quantile(
+      Value_clean[Code == "iRBD"], 0.75, na.rm = TRUE
+    ),
+    
+    p_value = wilcox.test(
+      Value_clean ~ Code,
+      data = pick(Value_clean, Code),
+      exact = FALSE
+    )$p.value,
+    
+    .groups = "drop"
+  )
 
 print(summary_means, n = nrow(summary_means))
+
+
+# Close PDF
+dev.off()
+
+# Close console output
+sink()
+
