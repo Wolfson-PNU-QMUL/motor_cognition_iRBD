@@ -17,6 +17,10 @@ library(e1071)
 library(broom.mixed)
 library(boot)
 
+getwd()
+
+#read in dataset
+
 table(RBD_control_BT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 #rename the 'yes' 
 RBD_control_BT_data <- RBD_control_BT_data %>%
@@ -62,13 +66,11 @@ RBD_control_BT_data %>%
   summarise(sessions_with_data = max(non_missing_sessions), .groups = "drop") %>%
   count(Code, sessions_with_data)
 
-
 #remove transgender
 RBD_control_BT_data <- RBD_control_BT_data %>%
   filter(gender != "Transgender/Nonbinary/Other")
 
-
-#need to reformat df 
+#need to reformat df so can run lme- year in separate rows rather than column
 RBD_control_BT_data2 <- RBD_control_BT_data %>%
   pivot_longer(
     cols = c(
@@ -90,7 +92,6 @@ RBD_control_BT_data2 <- RBD_control_BT_data %>%
     values_from = Value
   )
 
-
 # combine KS non adjusted and adjusted columns
 RBD_control_BT_data2 <- RBD_control_BT_data2 %>%
   mutate(braintest_worst_ks = if_else(!is.na(braintest_worst_ks_adj), braintest_worst_ks_adj, braintest_worst_ks)) %>%
@@ -105,7 +106,6 @@ RBD_control_BT_data2 <- RBD_control_BT_data2 %>%
   )
 
 summary(RBD_control_BT_data2)
-
 
 ## only take out baseline scores and most recent followup for each participant (2 timepoints)
 # and remove participants with no follow up data
@@ -130,19 +130,16 @@ valid_ids <- RBD_control_BT_data2 %>%
   filter(has_baseline & has_followup) %>%
   pull(PID2)
 
-
 # Now filter rows to just baseline and follow-up sessions *per participant*
 RBD_control_BT_data_clean <- RBD_control_BT_data2 %>%
   filter(PID2 %in% valid_ids) %>%
   filter(session_label == braintest_longitudinal_baseline | session_label == braintest_longitudinal_lastfollowup)
-
 
 #check for NAs
 RBD_control_BT_data_clean %>%
   dplyr::select(braintest_worst_at_adj, braintest_worst_is_adj, braintest_worst_ks) %>% 
   summarise_all(~ sum(is.na(.)))
 # no NAs
-
 
 ## remove PDs
 table(RBD_control_BT_data_clean$Code, RBD_control_BT_data_clean$hx_neuro_parkinsons) # 9 RBD participants with PD
@@ -153,13 +150,13 @@ RBD_and_PD_longitudinal_data <- RBD_control_BT_data_clean %>%
 RBD_control_BT_data_clean <- RBD_control_BT_data_clean %>%
   anti_join(RBD_and_PD_longitudinal_data, by = c("PID2", "TokenFinal"))
 
+#save file
 
 # log transform IS
 RBD_control_BT_data_clean$braintest_worst_is_adj <- log(RBD_control_BT_data_clean$braintest_worst_is_adj)
 #remove NaN rows
 RBD_control_BT_data_clean <- RBD_control_BT_data_clean %>%
   filter(!is.nan(braintest_worst_is_adj))
-
 
 # inspect data for outliers
 ggplot(RBD_control_BT_data_clean, aes(x = factor(Year), y = braintest_worst_is_adj)) +
@@ -176,7 +173,6 @@ ggplot(RBD_control_BT_data_clean, aes(x = factor(Year), y = braintest_worst_is_a
     panel.grid.major.x = element_blank()
   )
 
-
 ggplot(RBD_control_BT_data_clean, aes(x = factor(Year), y = braintest_worst_at_adj)) +
   geom_boxplot(fill = "#69b3a2", color = "#1f3552", outlier.color = "red", outlier.shape = 16, outlier.size = 2) +
   labs(
@@ -190,7 +186,6 @@ ggplot(RBD_control_BT_data_clean, aes(x = factor(Year), y = braintest_worst_at_a
     axis.title = element_text(face = "bold"),
     panel.grid.major.x = element_blank()
   )
-
 
 ggplot(RBD_control_BT_data_clean, aes(x = factor(Year), y = braintest_worst_ks)) +
   geom_boxplot(fill = "#69b3a2", color = "#1f3552", outlier.color = "red", outlier.shape = 16, outlier.size = 2) +
@@ -206,8 +201,6 @@ ggplot(RBD_control_BT_data_clean, aes(x = factor(Year), y = braintest_worst_ks))
     panel.grid.major.x = element_blank()
   )
 
-
-
 # have outliers check what cohort they belong to
 Q1 <- quantile(RBD_control_BT_data_clean$braintest_worst_ks, 0.25, na.rm = TRUE)
 Q3 <- quantile(RBD_control_BT_data_clean$braintest_worst_ks, 0.75, na.rm = TRUE)
@@ -220,8 +213,7 @@ outliers_overall <- RBD_control_BT_data_clean %>%
 
 table(outliers_overall$Code)
 
-#all outliers in controls 
-
+# outliers in controls 
 
 #have outliers in control group but don't want to 'stack the deck' to get sig differences
 #instead of excluding set the value at the cohort max/min
@@ -243,7 +235,6 @@ winsorize_with_max_min <- function(x) {
   return(x)
 }
 
-
 # Apply to the selected columns to controls
 RBD_control_BT_data_clean <- RBD_control_BT_data_clean %>%
   mutate(across(
@@ -253,10 +244,8 @@ RBD_control_BT_data_clean <- RBD_control_BT_data_clean %>%
               .)
   ))
 
-
 # check categories of data
 str(RBD_control_BT_data_clean)
-
 
 # Check for missing values in specific columns
 sum(is.na(RBD_control_BT_data_clean$gender))
@@ -264,12 +253,10 @@ sum(is.na(RBD_control_BT_data_clean$age_session_baseline))
 sum(is.na(RBD_control_BT_data_clean$braintest_date_baseline))
 sum(is.na(RBD_control_BT_data_clean$braintest_date_lastfollowup))
 
-
 ## reverse direction of KS
 RBD_control_BT_data_clean$bt_worst_ks_rev <- -RBD_control_BT_data_clean$braintest_worst_ks
 #check 
 head(RBD_control_BT_data_clean[, c("braintest_worst_ks", "bt_worst_ks_rev")])
-
 
 ### check distribution of data - density plots
 RBD_control_BT_data_clean %>%
@@ -280,7 +267,6 @@ RBD_control_BT_data_clean %>%
   theme_minimal() +
   xlim(45, 90)
 
-
 BT_baseline_male <- RBD_control_BT_data_clean[RBD_control_BT_data_clean$gender == "Male", ]
 
 BT_baseline_male %>%
@@ -290,7 +276,6 @@ BT_baseline_male %>%
   scale_fill_manual(values = c("#009E73", "#E69F00")) +
   theme_minimal() +
   xlim(45, 90)
-
 
 BT_baseline_female <- RBD_control_BT_data_clean[RBD_control_BT_data_clean$gender == "Female", ]
 
@@ -337,6 +322,7 @@ ggplot(df_filtered, aes(x = braintest_worst_ks, group = interaction(Code, Timepo
   labs(x = "Braintest Worst KS Adjusted", y = "Density", title = "Baseline vs Follow-up by Group")
 
 
+
 #### demographics ####
 table(df_filtered$Code, df_filtered$Timepoint)
 
@@ -359,7 +345,6 @@ chi_test_result_sex <- df_filtered %>%
   filter(Timepoint == "Baseline") %>%
   with(table(gender, Code)) %>%
   chisq.test()
-
 print(chi_test_result_sex)
 
 # Wilcoxon test for IS
@@ -387,7 +372,6 @@ df_filtered2 <- df_filtered %>%
 df_filtered2$Code <- as.factor(df_filtered2$Code)
 table(df_filtered2$Code, df_filtered2$Timepoint)
 
-
 class(df_filtered2$braintest_date_baseline)
 class(df_filtered2$braintest_date_lastfollowup)
 df_filtered2 <- df_filtered2 %>%
@@ -396,15 +380,13 @@ df_filtered2 <- df_filtered2 %>%
     braintest_date_lastfollowup = as.Date(braintest_date_lastfollowup, format = "%d/%m/%Y")
   )
 
-
-#to avoid collinearity produce elapsed_time
+#to avoid collinearity (similar data) produce elapsed_time- true time difference for each participant:
 df_filtered2 <- df_filtered2 %>%
   group_by(PID2) %>%
   mutate(
     elapsed_time = as.numeric(difftime(braintest_date_lastfollowup, min(braintest_date_baseline), units = "days")) / 365.25
   ) %>%
   ungroup()
-
 
 # check mean followup time
 df_filtered2 %>%
@@ -417,8 +399,6 @@ df_filtered2 %>%
     max_followup    = max(followup_years, na.rm = TRUE)
   )
 
-
-
 df_filtered2 %>%
   group_by(PID2, Code) %>%
   summarise(followup_years = max(elapsed_time, na.rm = TRUE), .groups = "drop") %>%
@@ -430,8 +410,6 @@ df_filtered2 %>%
     max_followup    = max(followup_years, na.rm = TRUE),
     n_participants  = n()
   )
-
-
 
 
 # Incoordination score
@@ -455,7 +433,6 @@ IS <- tidy(IS_model, effects = "fixed", conf.int = TRUE) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3)))
 print(IS)
 
-
 # Helper for median + IQR
 median_iqr <- function(x) {
   data.frame(
@@ -465,6 +442,34 @@ median_iqr <- function(x) {
   )
 }
 
+# Plot IS across years for cases vs controls (median + IQR)
+ggplot(df_filtered2, aes(x = Timepoint, y = braintest_worst_is_adj, color = Code, group = Code)) +
+  stat_summary(fun = median, geom = "line", linewidth = 1.2) +
+  stat_summary(fun = median, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
+  stat_summary(fun.data = median_iqr, geom = "errorbar", width = 0.2, linewidth = 0.8) +
+  labs(
+    title = "Incoordination Score at Baseline and Follow-up",
+    subtitle = "PSG_RBD vs. Controls",
+    x = "Timepoint",
+    y = "Median Incoordination Score (with IQR)",
+    color = "Group"
+  ) +
+  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"),
+                     labels = c("Controls", "Cases")) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    axis.title = element_text(face = "bold"),
+    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
+    panel.grid.major.x = element_blank(),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 12),         # keep subtitle readable
+    axis.text = element_text(size = 11),            # axis tick labels
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    legend.title = element_text(size = 12, face = "bold"),
+    legend.text = element_text(size = 11)
+  )
 
 # Kinesia score
 KS_model <- lmer(
@@ -487,6 +492,27 @@ KS <- tidy(KS_model, effects = "fixed", conf.int = TRUE) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3)))
 print(KS)
 
+# Plot KS across years for cases vs controls
+ggplot(df_filtered2, aes(x = Timepoint, y = braintest_worst_ks, color = Code, group = Code)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
+  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) +  # Changed here
+  labs(
+    title = "Kinesia Score at Baseline and Follow-up",
+    subtitle = "PSG_RBD vs. Controls",
+    x = "Timepoint",
+    y = "Mean Kinesia Score",
+    color = "Group"
+  ) +
+  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"), labels = c("Controls", "Cases")) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    axis.title = element_text(face = "bold"),
+    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
+    panel.grid.major.x = element_blank(),
+    plot.title = element_text(face = "bold", size = 14)
+  )
 
 # Akinesia Time
 AT_model <- lmer(
@@ -509,6 +535,28 @@ AT <- tidy(AT_model, effects = "fixed", conf.int = TRUE) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3)))
 print(AT)
 
+# Plot AT across years for cases vs controls
+ggplot(df_filtered2, aes(x = Timepoint, y = braintest_worst_at_adj, color = Code, group = Code)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1.2) +
+  stat_summary(fun = mean, geom = "point", size = 3, shape = 21, fill = "white", stroke = 1) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2, linewidth = 0.8) + 
+  labs(
+    title = "Akinesia Time at Baseline and Follow-up",
+    subtitle = "PSG_RBD vs. Controls",
+    x = "Timepoint",
+    y = "Mean Akinesia Time",
+    color = "Group"
+  ) +
+  scale_color_manual(values = c("darkgreen", "darkgoldenrod2"), labels = c("Controls", "Cases")) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    axis.title = element_text(face = "bold"),
+    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.5),
+    panel.grid.major.x = element_blank(),
+    plot.title = element_text(face = "bold", size = 14)
+  )
+
 
 #### check linearity of age
 #IS
@@ -524,7 +572,6 @@ ggplot(df_filtered2, aes(x = age_session_baseline, y = braintest_worst_is_adj, c
   )
 
 df_filtered2$age_squared <- df_filtered2$age_session_baseline^2
-
 
 #scale variables
 df_filtered2 <- df_filtered2 %>%
@@ -554,7 +601,6 @@ IS2 <- tidy(IS_model2, effects = "fixed", conf.int = TRUE) %>%
   mutate(across(where(is.numeric), ~ round(.x, 3)))
 print(IS2)
 anova(IS_model, IS_model2)
-
 
 #KS
 ggplot(df_filtered2, aes(x = age_session_baseline, y = braintest_worst_ks, color = factor(Code))) +
@@ -589,8 +635,6 @@ KS2 <- tidy(KS_model2, effects = "fixed", conf.int = TRUE) %>%
 print(KS2)
 anova(KS_model, KS_model2)
 
-
-
 #AT
 ggplot(df_filtered2, aes(x = age_session_baseline, y = braintest_worst_at_adj, color = factor(Code))) +
   geom_point(alpha = 0.3) +
@@ -602,7 +646,6 @@ ggplot(df_filtered2, aes(x = age_session_baseline, y = braintest_worst_at_adj, c
     y = "Worst AT Score",
     color = "Code"
   )
-
 
 AT_model2 <- lmer(
   braintest_worst_at_adj ~ elapsed_time_z * Code + age_baseline_z + age_squared_z + gender + (1 | PID2),
