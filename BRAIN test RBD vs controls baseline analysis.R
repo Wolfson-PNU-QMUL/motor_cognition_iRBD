@@ -4,9 +4,12 @@ library(ggplot2)
 library(readr)
 library(readxl)
 library(moments)
-library(broom) 
-library(ResourceSelection)
+library(broom) # to tidy
+library(ResourceSelection) # for Hosmer-Lemeshow test 
 
+getwd()
+
+RBD_control_BT_data <- read_csv("BRAIN test/RBD_control_BT_data.csv")
 table(RBD_control_BT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
 #rename the 'yes' 
 RBD_control_BT_data <- RBD_control_BT_data %>%
@@ -31,7 +34,6 @@ RBD_control_BT_data <- RBD_control_BT_data %>%
 RBD_control_BT_data %>%
   filter(Code == "Control") %>%
   count(PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
-
 
 ### remove sessions other than baseline
 RBD_control_baseline_data <- RBD_control_BT_data %>%
@@ -59,7 +61,6 @@ RBD_control_baseline_data2 <- RBD_control_baseline_data2 %>%
 
 table(RBD_control_baseline_data2$Code)
 
-
 ## reverse direction of KS
 RBD_control_baseline_data2$bt_worst_ks_rev <- -RBD_control_baseline_data2$bt_worst_ks_baseline
 #check 
@@ -73,8 +74,7 @@ RBD_control_baseline_data2 <- RBD_control_baseline_data2 %>%
   anti_join(RBD_and_PD_bl_data, by = c("PID2", "TokenFinal"))
 table(RBD_control_baseline_data2$hx_neuro_parkinsons, RBD_control_baseline_data2$Code)
 
-
-RBD_control_baseline_data2 <- read.csv("BRAIN test/Pilot Study/Baseline/RBD vs controls/RBD_control_baseline_BT_data.csv")
+#save file
 
 #### baseline analysis RBD vs controls ####
 summary(RBD_control_baseline_data2)
@@ -97,7 +97,7 @@ RBD_control_baseline_data2$bt_worst_is_baseline <- log(RBD_control_baseline_data
 RBD_control_baseline_data2 <- RBD_control_baseline_data2 %>%
   filter(!is.nan(bt_worst_is_baseline))
 
-#have outliers in control group
+#have outliers in control group but don't want to 'stack the deck' to get sig differences
 #instead of excluding set the value at the cohort max/min
 # Winsorization function to replace outliers with the max/min within bounds
 winsorize_with_max_min <- function(x) {
@@ -144,12 +144,10 @@ ggplot(BT_baseline_female, aes(x=age_session_baseline, group=Code, fill=Code)) +
   geom_density(alpha=.5)+ scale_fill_manual(values=c("#009E73","#E69F00")) + theme_minimal() +
   xlim(47,92)
 
-
 ggplot(RBD_control_baseline_data2, aes(x = bt_worst_is_baseline, group = Code, fill = Code)) +
   geom_density(alpha = .5) +
   scale_fill_manual(values = c("#009E73", "#E69F00")) +
   theme_minimal() + xlim(4.5, 14.5)
-
 
 IS <- RBD_control_baseline_data2$bt_worst_is_baseline
 IS <- rnorm(5802)
@@ -170,7 +168,6 @@ ggplot(RBD_control_baseline_data2, aes(x=bt_worst_at_baseline, group=Code, fill=
 ggplot(RBD_control_baseline_data2, aes(x=bt_worst_ks_rev, group=Code, fill=Code)) +
   geom_density(alpha=.5)+ scale_fill_manual(values=c("#009E73","#E69F00")) + theme_minimal() +
   xlim(-100, 20)
-
 
 #### Demographics ####
 table(RBD_control_baseline_data2$Code)
@@ -204,8 +201,8 @@ t.test(bt_worst_at_baseline ~ Code, data = RBD_control_baseline_data2)
 t.test(bt_worst_ks_rev ~ Code, data = RBD_control_baseline_data2)
 
 #PD
-table(RBD_control_baseline_data2$Code, RBD_control_baseline_data2$hx_neuro_parkinsons)
-PD_table <- table(RBD_control_baseline_data2$Code, RBD_control_baseline_data2$hx_neuro_parkinsons)
+table(RBD_control_baseline_data$Code, RBD_control_baseline_data$hx_neuro_parkinsons)
+PD_table <- table(RBD_control_baseline_data$Code, RBD_control_baseline_data$hx_neuro_parkinsons)
 # Fisher’s Exact Test
 fisher.test(PD_table)
 
@@ -226,7 +223,6 @@ model_IS <- glm( Code ~ bt_worst_is_baseline_z  + gender + age_session_baseline,
 summary(model_IS)
 exp(cbind(coef(model_IS), confint(model_IS,level = 0.95)))
 
-
 # Kinesia score
 ggplot(RBD_control_baseline_data2, aes(x=Code, y=bt_worst_ks_rev)) + 
   geom_boxplot()
@@ -237,7 +233,6 @@ model_KS <- glm( Code ~ bt_worst_ks_rev_z  + gender + age_session_baseline,
 summary(model_KS)
 exp(cbind(coef(model_KS), confint(model_KS,level = 0.95)))
 
-
 #Akinesia time
 ggplot(RBD_control_baseline_data2, aes(x=Code, y=bt_worst_at_baseline)) + 
   geom_boxplot()
@@ -247,7 +242,6 @@ model_AT <- glm( Code ~ bt_worst_at_baseline_z  + gender + age_session_baseline,
                  data = RBD_control_baseline_data2,family = 'binomial')
 summary(model_AT)
 exp(cbind(coef(model_AT), confint(model_AT,level = 0.95)))
-
 
 ### check age linearity
 #IS
@@ -267,7 +261,6 @@ AIC(model_IS, model_age_quad)
 final_model_IS <- model_age_quad
 
 
-
 #KS
 ggplot(RBD_control_baseline_data2, aes(x = age_session_baseline, y = fitted(model_KS))) +
   geom_point(alpha = 0.3) +
@@ -281,7 +274,6 @@ summary(model_age_quad_KS)
 exp(cbind(coef(model_age_quad_KS), confint(model_age_quad_KS,level = 0.95)))
 AIC(model_KS, model_age_quad_KS)
 final_model_KS <- model_age_quad_KS
-
 
 #AT
 ggplot(RBD_control_baseline_data2, aes(x = age_session_baseline, y = fitted(model_AT))) +
@@ -297,7 +289,6 @@ exp(cbind(coef(model_age_quad_AT), confint(model_age_quad_AT,level = 0.95)))
 AIC(model_AT, model_age_quad_AT)
 final_model_AT <- model_age_quad_AT
 
-
 #### QQ plots ####
 # List of models and labels
 models <- list(
@@ -305,7 +296,6 @@ models <- list(
   KS = final_model_KS,
   AT = final_model_AT
 )
-
 
 df_all_residuals <- bind_rows(
   lapply(names(models), function(name) {
@@ -330,15 +320,12 @@ ggplot(df_all_residuals, aes(sample = residuals, color = factor(Code))) +
   theme_minimal()
 
 
-
 ### tidy up final models
 tidy(final_model_IS, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE)
 
 tidy(final_model_KS, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE)
 
 tidy(final_model_AT, conf.int = TRUE, conf.level = 0.90, exponentiate = TRUE)
-
-
 
 #### Hosmer-Lemeshow test to check if the model fits ####
 #IS
@@ -357,6 +344,8 @@ hoslem.test(x = RBD_control_baseline_data2$Code_numeric,
 hoslem.test(x = RBD_control_baseline_data2$Code_numeric,
             y = fitted(final_model_AT),
             g = 10)
+
+
 
 
 
