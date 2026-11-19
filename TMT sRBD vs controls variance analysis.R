@@ -5,7 +5,7 @@ library(tidyverse)
 library(readxl)
 library(writexl)
 library(e1071)
-library(gridExtra) 
+library(gridExtra)
 library(broom.mixed)
 library(boot)
 library(readr)
@@ -21,11 +21,8 @@ getwd()
 
 sink()
 
-pdf()
-
 
 #read in dataset
-View(matched_sRBD_control_TMT_data)
 
 
 table(matched_sRBD_control_TMT_data$PREDICTPDGroupingsDetail_ParkinsonsDiseaseHighRisk_baseline)
@@ -62,7 +59,7 @@ matched_sRBD_control_TMT_data2 <- matched_sRBD_control_TMT_data %>%
   )
 
 
-#save file
+#save dataset
 
 
 ######## Exploratory data analysis #########
@@ -507,7 +504,7 @@ TMT_EF <- sRBD_TMT_long_qc %>%
   )) %>%
   select(
     PID2, TokenFinal, RelativeVisit, Code,
-    age_session_baseline, gender,
+    age_session_baseline, gender, education_level,
     Measure, Value_log
   ) %>%
   tidyr::pivot_wider(
@@ -532,6 +529,7 @@ TMT_log <- TMT_EF %>%
     Code,
     age_session_baseline,
     gender,
+    education_level,
     Measure = "TMT_EF_log",
     Value = Value_log_EF
   )
@@ -577,8 +575,11 @@ sRBD_TMT_long_final %>%
   summarise(
     n = n(),
     missing_age = sum(is.na(age_session_baseline)),
-    missing_gender = sum(is.na(gender))
+    missing_gender = sum(is.na(gender)),
+    missing_education = sum(is.na(education_level))
   )
+
+
 
 
 ######### Variance Analysis ######### 
@@ -639,7 +640,8 @@ variance_boot <- sRBD_TMT_long_final %>%
 
 print(variance_boot, n = Inf, width = Inf)
 
-#save file
+#save dataset
+
 
 #Step 1c — Plot mean ± SD with bootstrap CI
 # Combine mean and bootstrap SD
@@ -697,7 +699,9 @@ for (m in measures) {
   print(p)
 }
 
+
 # Save the combined mean + SD + bootstrap CI
+
 
 #Step 2: Model time-varying variance (heteroscedastic mixed model)
 #make visit variable factor and control group the reference
@@ -716,7 +720,7 @@ TMTA_data <- sRBD_TMT_long_final %>%
 
 # Visit-specific variance model
 m_visit_TMTA <- nlme::lme(
-  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender,
+  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender + education_level,
   random = ~ 1 | PID2,
   data = TMTA_data,
   na.action = na.exclude,
@@ -782,7 +786,7 @@ TMTB_data <- sRBD_TMT_long_final %>%
 
 # Visit-specific variance model
 m_visit_TMTB <- nlme::lme(
-  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender,
+  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender + education_level,
   random = ~ 1 | PID2,
   data = TMTB_data,
   na.action = na.exclude,
@@ -848,7 +852,7 @@ TMTEF_data <- sRBD_TMT_long_final %>%
 
 # Visit-specific variance model
 m_visit_TMTEF <- nlme::lme(
-  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender,
+  Value_for_analysis ~ Code * RelativeVisit + age_session_baseline + gender + education_level,
   random = ~ 1 | PID2,
   data = TMTEF_data,
   na.action = na.exclude,
@@ -903,7 +907,7 @@ mssd_TMTEF %>% count(Code, is.na(mssd))
 table(TMTEF_data$Code[!is.na(TMTEF_data$Value_for_analysis)],
       TMTEF_data$RelativeVisit)
 
-
+    
 ###### demographics ###### 
 sRBD_TMT_long_all %>%
   distinct(PID2, Code) %>%
